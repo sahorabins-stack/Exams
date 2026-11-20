@@ -1,0 +1,2625 @@
+<!doctype html>
+<html lang="en-GB">
+    <head>
+        <base target="_top" />
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Invigilator Claim Authorisation</title>
+        <style>
+            :root {
+                --navy: #0d2d6c;
+                --lime: #78be20;
+                --forest: #2e7d32;
+                --sage: #e9f2e4;
+                --bg-tint: #f4f7fb;
+                --border: #d0d9e8;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                font-family: "Segoe UI", Roboto, Arial, sans-serif;
+                margin: 0;
+                padding: 12px;
+                color: #1e293b;
+            }
+            .card {
+                max-width: 1140px;
+                margin: 0 auto;
+                background: #fff;
+                border-radius: 12px;
+                box-shadow: 0 4px 16px rgba(13, 45, 108, 0.12);
+                border: 1px solid var(--border);
+                overflow: hidden;
+            }
+            .card-header {
+                background: var(--navy);
+                color: #fff;
+                padding: 18px 24px;
+                border-bottom: 5px solid var(--lime);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 16px;
+            }
+            .school-tag {
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 1.2px;
+                color: var(--lime);
+                font-weight: 700;
+                margin-bottom: 4px;
+            }
+            .card-header h2 {
+                margin: 0;
+                font-size: 21px;
+                font-weight: 600;
+            }
+            .card-header p {
+                margin: 4px 0 0;
+                font-size: 13px;
+                color: #d6e2f5;
+            }
+            .school-logo {
+                width: 64px;
+                height: 64px;
+                border-radius: 50%;
+                background: #fff;
+                padding: 2px;
+                border: 2px solid var(--lime);
+                object-fit: contain;
+                flex-shrink: 0;
+            }
+            .lock-box {
+                max-width: 420px;
+                margin: 40px auto;
+                padding: 28px;
+                background: var(--bg-tint);
+                border: 1.5px solid var(--border);
+                border-top: 4px solid var(--navy);
+                border-radius: 10px;
+                text-align: center;
+            }
+            .lock-box h3 {
+                margin: 0 0 8px;
+                color: var(--navy);
+            }
+            .lock-box p {
+                font-size: 13.5px;
+                color: #475569;
+                margin-bottom: 18px;
+            }
+            .lock-box input {
+                width: 100%;
+                padding: 10px 12px;
+                margin-bottom: 12px;
+                border: 1.5px solid var(--border);
+                border-radius: 6px;
+                font-size: 14px;
+            }
+            .primary-btn {
+                width: 100%;
+                padding: 11px;
+                background: var(--navy);
+                color: #fff;
+                border: none;
+                border-bottom: 3px solid var(--lime);
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: 700;
+                cursor: pointer;
+            }
+            .primary-btn:hover {
+                background: #1e40af;
+            }
+            .err-msg {
+                color: #b91c1c;
+                font-size: 13px;
+                font-weight: 600;
+                margin-top: 10px;
+                display: none;
+            }
+
+            .welcome-splash {
+                display: none;
+                padding: 56px 24px;
+                text-align: center;
+                background: linear-gradient(180deg, #f4f7fb 0%, #ffffff 100%);
+                animation: fadeSlideIn 0.45s ease-out forwards;
+            }
+            .welcome-badge {
+                width: 68px;
+                height: 68px;
+                margin: 0 auto 16px;
+                border-radius: 50%;
+                background: var(--forest);
+                border: 4px solid var(--lime);
+                color: #fff;
+                font-size: 32px;
+                line-height: 60px;
+                font-weight: 700;
+                box-shadow: 0 6px 18px rgba(46, 125, 50, 0.25);
+                animation: popScale 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            }
+            .welcome-title {
+                font-size: 26px;
+                font-weight: 700;
+                color: var(--navy);
+                margin: 0 0 6px;
+            }
+            .welcome-sub {
+                font-size: 14px;
+                color: #475569;
+                margin: 0 0 22px;
+            }
+            .progress-track {
+                max-width: 260px;
+                height: 6px;
+                background: #e2e8f0;
+                border-radius: 99px;
+                margin: 0 auto;
+                overflow: hidden;
+            }
+            .progress-fill {
+                width: 0%;
+                height: 100%;
+                background: linear-gradient(90deg, var(--navy), var(--lime));
+                border-radius: 99px;
+                animation: loadBar 1.6s ease-in-out forwards;
+            }
+            @keyframes fadeSlideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(12px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            @keyframes popScale {
+                0% {
+                    transform: scale(0.5);
+                    opacity: 0;
+                }
+                100% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+            }
+            @keyframes loadBar {
+                0% {
+                    width: 0%;
+                }
+                100% {
+                    width: 100%;
+                }
+            }
+
+            .portal-body {
+                padding: 22px 24px 24px;
+                display: none;
+                animation: fadeSlideIn 0.45s ease-out forwards;
+            }
+            .top-nav-bar {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-between;
+                align-items: center;
+                gap: 12px;
+                background: #ecfdf5;
+                border: 1px solid var(--lime);
+                border-left: 5px solid var(--navy);
+                padding: 10px 16px;
+                border-radius: 8px;
+                margin-bottom: 18px;
+            }
+            .welcome-label {
+                font-size: 14.5px;
+                font-weight: 700;
+                color: var(--navy);
+            }
+            .mode-switch {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            .tab-btn {
+                padding: 8px 14px;
+                border-radius: 6px;
+                font-size: 13px;
+                font-weight: 700;
+                cursor: pointer;
+                border: 1.5px solid var(--navy);
+                background: #fff;
+                color: var(--navy);
+            }
+            .tab-btn.active {
+                background: var(--navy);
+                color: #fff;
+                border-bottom: 3px solid var(--lime);
+            }
+
+            .cards {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                gap: 14px;
+                margin-bottom: 20px;
+            }
+            .kpi-card {
+                background: var(--bg-tint);
+                border: 1px solid var(--border);
+                border-top: 4px solid var(--navy);
+                border-radius: 8px;
+                padding: 14px 16px;
+            }
+            .kpi-card.accent {
+                border-top-color: var(--lime);
+            }
+            .kpi-title {
+                font-size: 11.5px;
+                color: #475569;
+                text-transform: uppercase;
+                font-weight: 700;
+            }
+            .kpi-value {
+                font-size: 24px;
+                font-weight: 700;
+                color: var(--navy);
+                margin-top: 6px;
+            }
+            .toolbar {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-between;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 14px;
+            }
+            .filters {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                flex: 1;
+            }
+            select,
+            input[type="text"] {
+                padding: 9px 12px;
+                border: 1.5px solid var(--border);
+                border-radius: 6px;
+                font-size: 13.5px;
+                background: var(--bg-tint);
+            }
+            .actions {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            .bulk-btn {
+                padding: 10px 14px;
+                background: var(--navy);
+                color: #fff;
+                border: none;
+                border-bottom: 3px solid var(--lime);
+                border-radius: 6px;
+                font-size: 13.5px;
+                font-weight: 700;
+                cursor: pointer;
+            }
+            .export-btn {
+                padding: 10px 16px;
+                background: var(--forest);
+                color: #fff;
+                border: none;
+                border-bottom: 3px solid var(--lime);
+                border-radius: 6px;
+                font-size: 13.5px;
+                font-weight: 700;
+                cursor: pointer;
+            }
+            .table-wrap {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 13px;
+            }
+            th {
+                background: var(--navy);
+                color: #fff;
+                text-align: left;
+                padding: 10px;
+                white-space: nowrap;
+            }
+            td {
+                padding: 9px 10px;
+                border-bottom: 1px solid var(--border);
+            }
+            tr:nth-child(even) td {
+                background: var(--bg-tint);
+            }
+            .sig-text {
+                font-style: italic;
+                color: var(--navy);
+                font-weight: 600;
+                font-size: 13px;
+            }
+            .badge-pending {
+                display: inline-block;
+                padding: 3px 8px;
+                background: #fef3c7;
+                color: #92400e;
+                border: 1px solid #f59e0b;
+                border-radius: 4px;
+                font-size: 11.5px;
+                font-weight: 700;
+            }
+            .badge-approved {
+                display: inline-block;
+                padding: 3px 8px;
+                background: #dcfce7;
+                color: #166534;
+                border: 1px solid #22c55e;
+                border-radius: 4px;
+                font-size: 11.5px;
+                font-weight: 700;
+            }
+            .approve-btn {
+                padding: 5px 10px;
+                background: var(--forest);
+                color: #fff;
+                border: none;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 700;
+                cursor: pointer;
+            }
+            .approve-btn:hover {
+                background: #246427;
+            }
+            .approve-btn:disabled,
+            .bulk-btn:disabled,
+            .tab-btn:disabled {
+                background: #94a3b8;
+                border-bottom-color: #64748b;
+                cursor: not-allowed;
+            }
+            .edit-btn {
+                padding: 5px 10px;
+                background: #fff;
+                color: var(--navy);
+                border: 1.5px solid var(--navy);
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 700;
+                cursor: pointer;
+                margin-left: 4px;
+            }
+            .edit-btn:hover {
+                background: var(--bg-tint);
+            }
+            .delete-btn {
+                padding: 5px 10px;
+                background: #fff;
+                color: #b91c1c;
+                border: 1.5px solid #b91c1c;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 700;
+                cursor: pointer;
+                margin-left: 4px;
+            }
+            .delete-btn:hover {
+                background: #fef2f2;
+            }
+            .delete-btn:disabled,
+            .edit-btn:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+            .modal-backdrop {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(13, 45, 108, 0.55);
+                z-index: 1000;
+                align-items: center;
+                justify-content: center;
+                padding: 12px;
+            }
+            .modal-box {
+                background: #fff;
+                width: 100%;
+                max-width: 520px;
+                max-height: 92vh;
+                overflow-y: auto;
+                border-radius: 12px;
+                border-top: 5px solid var(--lime);
+                box-shadow: 0 10px 32px rgba(0, 0, 0, 0.3);
+                padding: 20px 22px;
+            }
+            .modal-box h3 {
+                margin: 0 0 4px;
+                color: var(--navy);
+                font-size: 18px;
+            }
+            .modal-who {
+                font-size: 13px;
+                color: #475569;
+                margin-bottom: 14px;
+            }
+            .edit-session {
+                border: 1.5px solid var(--border);
+                background: var(--bg-tint);
+                border-radius: 8px;
+                padding: 12px 14px;
+                margin-bottom: 12px;
+            }
+            .edit-session label.check {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-weight: 700;
+                color: var(--navy);
+                font-size: 14px;
+                margin-bottom: 8px;
+            }
+            .edit-row {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 10px;
+            }
+            .edit-row label {
+                display: block;
+                font-size: 12px;
+                font-weight: 700;
+                color: #475569;
+                margin-bottom: 3px;
+            }
+            .edit-row input {
+                width: 100%;
+                background: #fff;
+            }
+            .edit-total {
+                font-size: 16px;
+                font-weight: 800;
+                color: var(--forest);
+                text-align: right;
+                margin: 4px 0 12px;
+            }
+            .edit-note {
+                display: none;
+                background: #fef3c7;
+                border: 1px solid #f59e0b;
+                color: #92400e;
+                font-size: 12.5px;
+                font-weight: 600;
+                padding: 8px 10px;
+                border-radius: 6px;
+                margin-bottom: 12px;
+            }
+            .edit-err {
+                color: #b91c1c;
+                font-size: 13px;
+                font-weight: 700;
+                margin-bottom: 10px;
+                min-height: 16px;
+            }
+            .modal-actions {
+                display: flex;
+                gap: 10px;
+            }
+            .modal-actions button {
+                flex: 1;
+            }
+            .cancel-btn {
+                padding: 10px 14px;
+                background: #fff;
+                color: var(--navy);
+                border: 1.5px solid var(--navy);
+                border-radius: 6px;
+                font-size: 13.5px;
+                font-weight: 700;
+                cursor: pointer;
+            }
+            .person-search-bar {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                align-items: center;
+                background: var(--bg-tint);
+                border: 1.5px solid var(--border);
+                padding: 14px 16px;
+                border-radius: 8px;
+                margin-bottom: 18px;
+            }
+            .person-search-bar input {
+                min-width: 240px;
+                flex: 1;
+                background: #fff;
+            }
+            .week-block {
+                border: 1.5px solid var(--border);
+                border-radius: 8px;
+                overflow: hidden;
+                margin-bottom: 20px;
+            }
+            .week-banner {
+                background: #a9c79b;
+                color: #1e293b;
+                font-weight: 700;
+                font-size: 13.5px;
+                padding: 8px 14px;
+                border-bottom: 1px solid var(--border);
+                display: flex;
+                justify-content: space-between;
+            }
+            .person-footer {
+                background: var(--bg-tint);
+                border: 1.5px solid var(--border);
+                border-left: 5px solid var(--lime);
+                border-radius: 8px;
+                padding: 14px 18px;
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-between;
+                align-items: center;
+                gap: 12px;
+            }
+
+            #tableBody > tr.group-row {
+                cursor: pointer;
+            }
+            #tableBody > tr.group-row > td {
+                background: #fff;
+                border-bottom: 1px solid var(--border);
+                vertical-align: middle;
+            }
+            #tableBody > tr.group-row:hover > td {
+                background: var(--bg-tint);
+            }
+            .chev {
+                display: inline-block;
+                width: 16px;
+                color: var(--lime);
+                font-size: 12px;
+            }
+            .group-name {
+                color: var(--navy);
+                font-size: 14px;
+            }
+            #tableBody > tr.detail-row > td {
+                background: #f8fafc;
+                padding: 8px 12px 14px 28px;
+                border-bottom: 2px solid var(--border);
+            }
+            .day-wrap {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                background: #fff;
+            }
+            .day-table th {
+                background: #3b5998;
+                font-size: 12px;
+                padding: 8px 10px;
+            }
+            .day-table td {
+                background: #fff;
+            }
+            .day-table tr:nth-child(even) td {
+                background: var(--bg-tint);
+            }
+            .day-actions {
+                white-space: nowrap;
+            }
+
+            @media (max-width: 680px) {
+                body {
+                    padding: 4px;
+                }
+                .card-header {
+                    flex-direction: column-reverse;
+                    text-align: center;
+                    padding: 14px;
+                    gap: 8px;
+                }
+                .school-logo {
+                    width: 52px;
+                    height: 52px;
+                }
+                .card-header h2 {
+                    font-size: 17px;
+                }
+                .lock-box {
+                    margin: 16px 10px;
+                    padding: 20px 14px;
+                }
+                .lock-box input,
+                select,
+                input[type="text"],
+                input[type="password"] {
+                    font-size: 16px !important;
+                    padding: 10px 12px;
+                    width: 100%;
+                }
+                .portal-body {
+                    padding: 12px;
+                }
+                .top-nav-bar {
+                    flex-direction: column;
+                    align-items: stretch;
+                    text-align: center;
+                    gap: 8px;
+                    padding: 10px 12px;
+                }
+                .mode-switch {
+                    flex-direction: column;
+                    width: 100%;
+                }
+                .tab-btn {
+                    width: 100%;
+                    padding: 11px;
+                }
+                .cards {
+                    grid-template-columns: 1fr 1fr;
+                    gap: 8px;
+                    margin-bottom: 14px;
+                }
+                .kpi-card {
+                    padding: 10px 12px;
+                }
+                .kpi-value {
+                    font-size: 20px;
+                }
+                .toolbar {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+                .filters,
+                .actions {
+                    flex-direction: column;
+                    width: 100%;
+                }
+                .bulk-btn,
+                .export-btn {
+                    width: 100%;
+                    padding: 12px;
+                    text-align: center;
+                }
+                #approvalsView .table-wrap {
+                    border: none;
+                    overflow: visible;
+                }
+                #approvalsView .table-wrap > table,
+                #approvalsView .table-wrap > table > tbody {
+                    display: block;
+                    width: 100%;
+                }
+                #approvalsView .table-wrap > table > thead {
+                    display: none;
+                }
+
+                /* person + week card */
+                #tableBody > tr.group-row {
+                    display: grid;
+                    grid-template-columns: 1fr auto;
+                    gap: 6px 10px;
+                    padding: 12px;
+                    margin-bottom: 8px;
+                    background: #fff;
+                    border: 1.5px solid var(--border);
+                    border-left: 4px solid var(--navy);
+                    border-radius: 8px;
+                }
+                #tableBody > tr.group-row > td {
+                    display: block;
+                    padding: 0;
+                    border: none;
+                    background: transparent !important;
+                }
+                #tableBody > tr.group-row > td:nth-child(1) {
+                    grid-row: 1;
+                    grid-column: 1 / 2;
+                }
+                #tableBody > tr.group-row > td:nth-child(5) {
+                    grid-row: 1;
+                    grid-column: 2 / 3;
+                    text-align: right;
+                }
+                #tableBody > tr.group-row > td:nth-child(2) {
+                    grid-row: 2;
+                    grid-column: 1 / 3;
+                    font-size: 12px;
+                    color: #475569;
+                }
+                #tableBody > tr.group-row > td:nth-child(3) {
+                    grid-row: 3;
+                    grid-column: 1 / 2;
+                    font-size: 12.5px;
+                }
+                #tableBody > tr.group-row > td:nth-child(4) {
+                    grid-row: 3;
+                    grid-column: 2 / 3;
+                    text-align: right;
+                    color: var(--forest);
+                    font-size: 13.5px;
+                }
+                #tableBody > tr.group-row > td:nth-child(4)::before {
+                    content: "Total: ";
+                    font-size: 11px;
+                    color: #64748b;
+                    font-weight: 600;
+                }
+                #tableBody > tr.group-row > td:nth-child(6) {
+                    grid-row: 4;
+                    grid-column: 1 / 3;
+                    display: flex;
+                    gap: 8px;
+                    padding-top: 8px;
+                    margin-top: 2px;
+                    border-top: 1px solid #e2e8f0;
+                }
+                #tableBody > tr.group-row > td:nth-child(6) .approve-btn {
+                    flex: 1;
+                    padding: 10px;
+                    font-size: 14px;
+                }
+
+                /* expanded days */
+                #tableBody > tr.detail-row {
+                    display: block;
+                    margin: 0 0 12px 10px;
+                }
+                #tableBody > tr.detail-row > td {
+                    display: block;
+                    padding: 0;
+                    border: none;
+                    background: transparent;
+                }
+                .day-wrap {
+                    border: none;
+                    overflow: visible;
+                    background: transparent;
+                }
+                .day-table,
+                .day-table tbody {
+                    display: block;
+                    width: 100%;
+                }
+                .day-table thead {
+                    display: none;
+                }
+                .day-table tr {
+                    display: grid;
+                    grid-template-columns: 1fr auto;
+                    gap: 4px 10px;
+                    padding: 10px;
+                    margin-bottom: 8px;
+                    background: #fff;
+                    border: 1.5px solid var(--border);
+                    border-left: 4px solid var(--lime);
+                    border-radius: 8px;
+                }
+                .day-table td {
+                    display: block;
+                    padding: 0;
+                    border: none;
+                    background: transparent !important;
+                }
+                .day-table td:nth-child(1) { grid-row: 1; grid-column: 1 / 2; font-size: 14px; color: var(--navy); }
+                .day-table td:nth-child(7) { grid-row: 1; grid-column: 2 / 3; text-align: right; }
+                .day-table td:nth-child(2) { grid-row: 2; grid-column: 1 / 2; font-size: 12.5px; }
+                .day-table td:nth-child(2)::before { content: "AM: "; font-weight: 700; color: var(--navy); }
+                .day-table td:nth-child(3) { grid-row: 2; grid-column: 2 / 3; text-align: right; font-size: 12.5px; }
+                .day-table td:nth-child(3)::before { content: "PM: "; font-weight: 700; color: var(--navy); }
+                .day-table td:nth-child(4) { grid-row: 3; grid-column: 1 / 2; font-size: 12px; color: #475569; }
+                .day-table td:nth-child(4)::before { content: "ET/RB: "; font-weight: 600; }
+                .day-table td:nth-child(5) { grid-row: 3; grid-column: 2 / 3; text-align: right; color: var(--forest); font-size: 13.5px; }
+                .day-table td:nth-child(5)::before { content: "Total: "; font-size: 11px; color: #64748b; font-weight: 600; }
+                .day-table td:nth-child(6) { grid-row: 4; grid-column: 1 / 3; font-size: 12px; }
+                .day-table td:nth-child(8) {
+                    grid-row: 5;
+                    grid-column: 1 / 3;
+                    display: flex;
+                    gap: 8px;
+                    align-items: center;
+                    padding-top: 8px;
+                    margin-top: 2px;
+                    border-top: 1px solid #e2e8f0;
+                }
+                .day-table td:nth-child(8) .approve-btn,
+                .day-table td:nth-child(8) .edit-btn,
+                .day-table td:nth-child(8) .delete-btn {
+                    flex: 1;
+                    margin-left: 0;
+                    padding: 10px;
+                    font-size: 14px;
+                }
+                .edit-row {
+                    grid-template-columns: 1fr 1fr;
+                }
+                .person-search-bar {
+                    flex-direction: column;
+                    align-items: stretch;
+                    padding: 12px;
+                }
+                .person-search-bar input {
+                    min-width: 100%;
+                }
+                .week-banner {
+                    flex-direction: column;
+                    gap: 4px;
+                    text-align: center;
+                }
+                .person-footer {
+                    flex-direction: column;
+                    text-align: center;
+                    padding: 12px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <div class="school-tag">Upton-by-Chester High School</div>
+                    <h2>Invigilator Claim Authorisation</h2>
+                    <p>Authorise pending claims, inspect time sheets, or add new exam schedules.</p>
+                </div>
+                <img
+                    src="data:image/png;base64,PASTE_YOUR_BASE64_STRING_HERE"
+                    alt="School Crest"
+                    class="school-logo"
+                    onerror="this.style.display='none'"
+                />
+            </div>
+
+            <!-- LOCK SCREEN -->
+            <div id="lockScreen" class="lock-box">
+                <h3>Head of Exams Sign-In</h3>
+                <p>Enter your name and authorisation passcode to view and approve invigilator claims.</p>
+                <input
+                    type="text"
+                    id="managerName"
+                    placeholder="Your Full Name (e.g. Head of Exams)"
+                    onkeydown="if(event.key==='Enter') document.getElementById('passcodeInput').focus()"
+                />
+                <input
+                    type="password"
+                    id="passcodeInput"
+                    placeholder="Enter Exams Passcode"
+                    onkeydown="if(event.key==='Enter') unlockPortal()"
+                />
+                <button class="primary-btn" id="unlockBtn" onclick="unlockPortal()">Unlock Approval Portal</button>
+                <div class="err-msg" id="loginErr"></div>
+            </div>
+
+            <!-- WELCOME SPLASH -->
+            <div id="welcomeSplash" class="welcome-splash">
+                <div class="welcome-badge">✓</div>
+                <h2 class="welcome-title" id="splashTitle">Welcome, Head of Exams</h2>
+                <p class="welcome-sub">Authorisation verified. Loading invigilator time sheet claims...</p>
+                <div class="progress-track"><div class="progress-fill"></div></div>
+            </div>
+
+            <!-- PORTAL BODY -->
+            <div id="portalBody" class="portal-body">
+                <div class="top-nav-bar">
+                    <span class="welcome-label" id="welcomeText">Welcome, Head of Exams</span>
+                    <div class="mode-switch">
+                        <button
+                            type="button"
+                            class="tab-btn active"
+                            id="tabApprovalsBtn"
+                            onclick="switchView('approvals')"
+                        >
+                            Pending &amp; All Claims
+                        </button>
+                        <button type="button" class="tab-btn" id="tabPersonBtn" onclick="switchView('person')">
+                            View Individual Time Sheet
+                        </button>
+                        <button type="button" class="tab-btn" id="tabScheduleBtn" onclick="switchView('schedule')">
+                            Manage Exam Schedule
+                        </button>
+                        <button type="button" class="tab-btn" id="tabPeopleBtn" onclick="switchView('people')">
+                            Add New Person
+                        </button>
+                    </div>
+                </div>
+
+                <!-- VIEW 1: APPROVALS TABLE -->
+                <div id="approvalsView">
+                    <div class="cards">
+                        <div class="kpi-card">
+                            <div class="kpi-title">Total Claim Rows</div>
+                            <div class="kpi-value" id="totalEntries">-</div>
+                        </div>
+                        <div class="kpi-card accent">
+                            <div class="kpi-title">Pending Authorisation</div>
+                            <div class="kpi-value" id="pendingCount">-</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-title">Approved Rows</div>
+                            <div class="kpi-value" id="approvedCount">-</div>
+                        </div>
+                        <div class="kpi-card accent">
+                            <div class="kpi-title">Filtered Hours Total</div>
+                            <div class="kpi-value" id="filteredHours">0:00</div>
+                        </div>
+                    </div>
+
+                    <div class="toolbar">
+                        <div class="filters">
+                            <select id="statusFilter" onchange="renderTable()">
+                                <option value="Pending" selected>Pending Approval</option>
+                                <option value="">All Claims</option>
+                                <option value="Approved">Approved Only</option>
+                            </select>
+                            <input
+                                type="text"
+                                id="searchBox"
+                                placeholder="Filter by invigilator name, period, or week..."
+                                onkeyup="renderTable()"
+                            />
+                        </div>
+                        <div class="actions">
+                            <button type="button" class="tab-btn" id="refreshBtn" onclick="refreshPortalData()">
+                                Refresh
+                            </button>
+                            <button class="bulk-btn" id="bulkBtn" onclick="approveFiltered()">
+                                Approve All Filtered
+                            </button>
+                        </div>
+                    </div>
+                    <!-- /.toolbar -->
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Invigilator</th>
+                                    <th>Period / Week</th>
+                                    <th>Days</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody"></tbody>
+                        </table>
+                    </div>
+                    <!-- /.table-wrap -->
+                </div>
+                <!-- /#approvalsView -->
+
+                <!-- VIEW 2: INDIVIDUAL INVIGILATOR TIME SHEET -->
+                <div id="personView" style="display: none">
+                    <div class="person-search-bar">
+                        <input
+                            type="text"
+                            id="personNameInput"
+                            list="invigilatorList"
+                            placeholder="Enter or pick invigilator name (e.g. Scott Horabin)..."
+                            oninput="onPersonNameChange()"
+                        />
+                        <datalist id="invigilatorList"></datalist>
+                        <select id="personStatusFilter" onchange="onPersonNameChange()">
+                            <option value="Approved" selected>Approved Hours Only</option>
+                            <option value="">All Submitted Hours (Approved + Pending)</option>
+                        </select>
+                        <select id="personMonthFilter" onchange="renderPersonSheet()">
+                            <option value="">All Months</option>
+                        </select>
+                        <button type="button" class="export-btn" onclick="exportPersonSheet()">Export Time Sheet (Excel)</button>
+                    </div>
+                    <div id="personSheetContainer">
+                        <p style="color: #475569; font-size: 14px">
+                            Enter or select an invigilator's name above to view their time sheet table.
+                        </p>
+                    </div>
+                </div>
+                <!-- /#personView -->
+
+                <!-- VIEW 3: MANAGE EXAM SCHEDULE -->
+                <div id="scheduleView" style="display: none">
+                    <div
+                        style="
+                            background: #f4f7fb;
+                            border: 1.5px solid #d0d9e8;
+                            border-top: 4px solid #0d2d6c;
+                            border-radius: 8px;
+                            padding: 16px;
+                            margin-bottom: 20px;
+                        "
+                    >
+                        <h3 style="margin: 0 0 6px; color: #0d2d6c; font-size: 17px">
+                            Add / Update Exam Week Schedule
+                        </h3>
+                        <p style="margin: 0 0 14px; font-size: 13px; color: #475569">
+                            Select the invigilator role, enter a new or existing Exam Period, the Week Commencing date,
+                            and the session times (e.g. 08:00).
+                        </p>
+
+                        <div
+                            style="
+                                display: grid;
+                                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                                gap: 12px;
+                                margin-bottom: 14px;
+                            "
+                        >
+                            <div>
+                                <label
+                                    style="
+                                        display: block;
+                                        font-weight: 700;
+                                        font-size: 12.5px;
+                                        color: #0d2d6c;
+                                        margin-bottom: 4px;
+                                    "
+                                    >Invigilator Role *</label
+                                >
+                                <select id="schedRoleInput" style="width: 100%; background: #fff">
+                                    <option value="Supporting Invigilator" selected>Supporting Invigilator</option>
+                                    <option value="Lead Invigilator">Lead Invigilator</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label
+                                    style="
+                                        display: block;
+                                        font-weight: 700;
+                                        font-size: 12.5px;
+                                        color: #0d2d6c;
+                                        margin-bottom: 4px;
+                                    "
+                                    >Exam Period *</label
+                                >
+                                <input
+                                    type="text"
+                                    id="schedPeriodInput"
+                                    list="periodOptionsList"
+                                    placeholder="e.g. Summer GCSE 2027"
+                                    style="width: 100%; background: #fff"
+                                />
+                                <datalist id="periodOptionsList"></datalist>
+                            </div>
+                            <div>
+                                <label
+                                    style="
+                                        display: block;
+                                        font-weight: 700;
+                                        font-size: 12.5px;
+                                        color: #0d2d6c;
+                                        margin-bottom: 4px;
+                                    "
+                                    >Week Commencing *</label
+                                >
+                                <input
+                                    type="date"
+                                    id="schedWeekInput"
+                                    style="
+                                        width: 100%;
+                                        background: #fff;
+                                        padding: 8px 10px;
+                                        border: 1.5px solid #d0d9e8;
+                                        border-radius: 6px;
+                                    "
+                                />
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 10px; text-align: right">
+                            <button
+                                type="button"
+                                onclick="copyMondayTimes()"
+                                style="
+                                    padding: 7px 12px;
+                                    background: #0d2d6c;
+                                    color: #fff;
+                                    border: none;
+                                    border-radius: 5px;
+                                    font-size: 12px;
+                                    font-weight: 700;
+                                    cursor: pointer;
+                                "
+                            >
+                                Copy Monday Times to All Days
+                            </button>
+                        </div>
+
+                        <div class="table-wrap" style="margin-bottom: 14px">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Day</th>
+                                        <th>AM Start</th>
+                                        <th>AM Finish</th>
+                                        <th>PM Start</th>
+                                        <th>PM Finish</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="schedBuilderBody">
+                                    <tr data-day="MONDAY">
+                                        <td><strong>MONDAY</strong></td>
+                                        <td><input type="text" class="sb-am-s" placeholder="08:00" style="width: 90px; background: #fff" /></td>
+                                        <td><input type="text" class="sb-am-f" placeholder="11:30" style="width: 90px; background: #fff" /></td>
+                                        <td><input type="text" class="sb-pm-s" placeholder="12:30" style="width: 90px; background: #fff" /></td>
+                                        <td><input type="text" class="sb-pm-f" placeholder="15:15" style="width: 90px; background: #fff" /></td>
+                                    </tr>
+                                    <tr data-day="TUESDAY">
+                                        <td><strong>TUESDAY</strong></td>
+                                        <td><input type="text" class="sb-am-s" placeholder="08:00" style="width: 90px; background: #fff" /></td>
+                                        <td><input type="text" class="sb-am-f" placeholder="11:30" style="width: 90px; background: #fff" /></td>
+                                        <td><input type="text" class="sb-pm-s" placeholder="12:30" style="width: 90px; background: #fff" /></td>
+                                        <td><input type="text" class="sb-pm-f" placeholder="15:15" style="width: 90px; background: #fff" /></td>
+                                    </tr>
+                                    <tr data-day="WEDNESDAY">
+                                        <td><strong>WEDNESDAY</strong></td>
+                                        <td><input type="text" class="sb-am-s" placeholder="08:00" style="width: 90px; background: #fff" /></td>
+                                        <td><input type="text" class="sb-am-f" placeholder="11:30" style="width: 90px; background: #fff" /></td>
+                                        <td><input type="text" class="sb-pm-s" placeholder="12:30" style="width: 90px; background: #fff" /></td>
+                                        <td><input type="text" class="sb-pm-f" placeholder="15:15" style="width: 90px; background: #fff" /></td>
+                                    </tr>
+                                    <tr data-day="THURSDAY">
+                                        <td><strong>THURSDAY</strong></td>
+                                        <td><input type="text" class="sb-am-s" placeholder="08:00" style="width: 90px; background: #fff" /></td>
+                                        <td><input type="text" class="sb-am-f" placeholder="11:30" style="width: 90px; background: #fff" /></td>
+                                        <td><input type="text" class="sb-pm-s" placeholder="12:30" style="width: 90px; background: #fff" /></td>
+                                        <td><input type="text" class="sb-pm-f" placeholder="15:15" style="width: 90px; background: #fff" /></td>
+                                    </tr>
+                                    <tr data-day="FRIDAY">
+                                        <td><strong>FRIDAY</strong></td>
+                                        <td><input type="text" class="sb-am-s" placeholder="08:00" style="width: 90px; background: #fff" /></td>
+                                        <td><input type="text" class="sb-am-f" placeholder="11:30" style="width: 90px; background: #fff" /></td>
+                                        <td><input type="text" class="sb-pm-s" placeholder="12:30" style="width: 90px; background: #fff" /></td>
+                                        <td><input type="text" class="sb-pm-f" placeholder="15:15" style="width: 90px; background: #fff" /></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="export-btn"
+                            id="saveSchedBtn"
+                            onclick="submitNewSchedule()"
+                            style="width: 100%"
+                        >
+                            Save Exam Schedule to Form
+                        </button>
+                        <div
+                            id="schedStatusMsg"
+                            style="margin-top: 10px; font-weight: 700; font-size: 13px; text-align: center"
+                        ></div>
+                    </div>
+                    <!-- /schedule form box -->
+
+                    <h3 style="margin: 0 0 10px; color: #0d2d6c; font-size: 16px">Active Exam Weeks on Form</h3>
+                    <div id="existingSchedulesList"></div>
+                </div>
+                <!-- /#scheduleView -->
+
+                <!-- VIEW 4: INVIGILATOR LIST (feeds the name dropdown on the claim form) -->
+                <div id="peopleView" style="display: none">
+                    <div
+                        style="
+                            background: #f4f7fb;
+                            border: 1.5px solid #d0d9e8;
+                            border-top: 4px solid #0d2d6c;
+                            border-radius: 8px;
+                            padding: 16px;
+                            margin-bottom: 20px;
+                        "
+                    >
+                        <h3 style="margin: 0 0 6px; color: #0d2d6c; font-size: 17px">Add New Invigilator</h3>
+                        <p style="margin: 0 0 14px; font-size: 13px; color: #475569">
+                            Anyone added here appears in the name drop-down on the claim form. Enter their full name
+                            exactly as it should appear on their time sheet.
+                        </p>
+                        <div class="person-search-bar" style="margin-bottom: 0">
+                            <input
+                                type="text"
+                                id="newPersonName"
+                                placeholder="Full name (e.g. Scott Horabin)"
+                                onkeydown="if(event.key==='Enter') addPerson()"
+                            />
+                            <button type="button" class="export-btn" id="addPersonBtn" onclick="addPerson()">
+                                Add Person
+                            </button>
+                        </div>
+                        <div
+                            id="peopleStatusMsg"
+                            style="margin-top: 10px; font-weight: 700; font-size: 13px; text-align: center"
+                        ></div>
+                    </div>
+
+                    <h3 style="margin: 0 0 10px; color: #0d2d6c; font-size: 16px" id="peopleHeading">
+                        Invigilators on the Form
+                    </h3>
+                    <div id="peopleList"></div>
+                </div>
+                <!-- /#peopleView -->
+            </div>
+            <!-- /#portalBody -->
+        </div>
+        <!-- /.card -->
+
+        <!-- EDIT CLAIM MODAL -->
+        <div id="editModal" class="modal-backdrop" onclick="if(event.target===this) closeEdit()">
+            <div class="modal-box">
+                <h3>Edit Time Sheet Row</h3>
+                <div class="modal-who" id="editWho"></div>
+
+                <div class="edit-session">
+                    <label class="check">
+                        <input type="checkbox" id="editAmWorked" onchange="updateEditTotal()" /> AM session worked
+                    </label>
+                    <div class="edit-row">
+                        <div>
+                            <label>AM Start</label>
+                            <input type="text" id="editAmStart" placeholder="08:00" oninput="updateEditTotal()" />
+                        </div>
+                        <div>
+                            <label>AM Finish</label>
+                            <input type="text" id="editAmFinish" placeholder="11:30" oninput="updateEditTotal()" />
+                        </div>
+                        <div>
+                            <label>AM extra (mins)</label>
+                            <input type="text" id="editAmExtra" placeholder="0" inputmode="numeric" oninput="updateEditTotal()" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="edit-session">
+                    <label class="check">
+                        <input type="checkbox" id="editPmWorked" onchange="updateEditTotal()" /> PM session worked
+                    </label>
+                    <div class="edit-row">
+                        <div>
+                            <label>PM Start</label>
+                            <input type="text" id="editPmStart" placeholder="12:30" oninput="updateEditTotal()" />
+                        </div>
+                        <div>
+                            <label>PM Finish</label>
+                            <input type="text" id="editPmFinish" placeholder="15:15" oninput="updateEditTotal()" />
+                        </div>
+                        <div>
+                            <label>PM extra (mins)</label>
+                            <input type="text" id="editPmExtra" placeholder="0" inputmode="numeric" oninput="updateEditTotal()" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="edit-total" id="editTotal">Day total: 0:00</div>
+                <div class="edit-note" id="editApprovedNote">
+                    This row is already approved. Saving will change the approved hours.
+                </div>
+                <div class="edit-err" id="editErr"></div>
+
+                <div class="modal-actions">
+                    <button type="button" class="cancel-btn" onclick="closeEdit()">Cancel</button>
+                    <button type="button" class="primary-btn" id="editSaveBtn" onclick="saveEdit()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            let savedPasscode = "";
+            let managerFullName = "";
+            let allClaims = [];
+            let currentFiltered = [];
+            let allSchedules = [];
+
+            const DAY_INDEX = { MONDAY: 0, TUESDAY: 1, WEDNESDAY: 2, THURSDAY: 3, FRIDAY: 4, SATURDAY: 5, SUNDAY: 6 };
+
+            /* ---------- helpers ---------- */
+
+            // Escape text before putting it into innerHTML (prevents script injection from form data).
+            function esc(s) {
+                return String(s == null ? "" : s).replace(/[&<>"']/g, function (m) {
+                    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m];
+                });
+            }
+
+            function isApprovedStatus(status) {
+                return String(status || "").trim().toLowerCase().startsWith("approved");
+            }
+
+            function isPendingStatus(status) {
+                return String(status || "").trim().toLowerCase() === "pending";
+            }
+
+            function extraMinsOf(c) {
+                return Number(c.amExtra || 0) + Number(c.pmExtra || 0);
+            }
+
+            function parseHoursToMins(str) {
+                const parts = String(str || "0:00").split(":");
+                if (parts.length !== 2) return 0;
+                return (parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0);
+            }
+
+            function sessionMins(startStr, finishStr, extraMins) {
+                let total = Number(extraMins) || 0;
+                if (startStr && finishStr) {
+                    const s = parseHoursToMins(String(startStr).replace(".", ":"));
+                    const f = parseHoursToMins(String(finishStr).replace(".", ":"));
+                    if (f > s) total += f - s;
+                }
+                return total;
+            }
+
+            function formatMins(mins) {
+                const h = Math.floor(mins / 60);
+                const m = mins % 60;
+                return h + ":" + (m < 10 ? "0" : "") + m;
+            }
+
+            // Makes "14/4/27", "14/04/27" and "14/04/2027" all become "14/04/27" so they group together.
+            function normaliseWeek(w) {
+                const raw = String(w == null ? "" : w).trim();
+                const m = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2}|\d{4})$/.exec(raw);
+                if (!m) return raw;
+                return m[1].padStart(2, "0") + "/" + m[2].padStart(2, "0") + "/" + m[3].slice(-2);
+            }
+
+            // Real calendar date of a claim row = week commencing + weekday offset. Returns null if unreadable.
+            function claimDayDate(c) {
+                const wk = normaliseWeek(c.weekCommencing); // dd/mm/yy
+                const m = /^(\d{2})\/(\d{2})\/(\d{2})$/.exec(wk);
+                if (!m) return null;
+                const d = new Date(2000 + parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10));
+                const off = DAY_INDEX[String(c.day || "").trim().toUpperCase()];
+                if (off) d.setDate(d.getDate() + off);
+                return isNaN(d.getTime()) ? null : d;
+            }
+
+            function monthKey(d) {
+                return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+            }
+
+            function monthLabel(key) {
+                const p = key.split("-");
+                return new Date(+p[0], +p[1] - 1, 1).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+            }
+
+            /* ---------- sign-in ---------- */
+
+            function unlockPortal() {
+                const nameVal = document.getElementById("managerName").value.trim();
+                const passVal = document.getElementById("passcodeInput").value.trim();
+                const errEl = document.getElementById("loginErr");
+                const btn = document.getElementById("unlockBtn");
+
+                if (!nameVal || !passVal) {
+                    errEl.textContent = "Please enter both your name and the passcode.";
+                    errEl.style.display = "block";
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.textContent = "Verifying...";
+                errEl.style.display = "none";
+
+                google.script.run
+                    .withSuccessHandler(function (data) {
+                        savedPasscode = passVal;
+                        managerFullName = nameVal;
+                        allClaims = data || [];
+
+                        document.getElementById("splashTitle").textContent = "Welcome, " + managerFullName;
+                        document.getElementById("welcomeText").textContent = "Welcome, " + managerFullName;
+                        document.getElementById("lockScreen").style.display = "none";
+                        document.getElementById("welcomeSplash").style.display = "block";
+
+                        populateNameDatalist();
+                        updateSummary();
+                        renderTable();
+
+                        setTimeout(function () {
+                            document.getElementById("welcomeSplash").style.display = "none";
+                            document.getElementById("portalBody").style.display = "block";
+                        }, 1700);
+                    })
+                    .withFailureHandler(function (err) {
+                        btn.disabled = false;
+                        btn.textContent = "Unlock Approval Portal";
+                        errEl.textContent = err.message;
+                        errEl.style.display = "block";
+                    })
+                    .verifyExamsAccess(passVal);
+            }
+
+            function refreshPortalData() {
+                const btn = document.getElementById("refreshBtn");
+                btn.disabled = true;
+                btn.textContent = "Refreshing...";
+                google.script.run
+                    .withSuccessHandler(function (data) {
+                        allClaims = data || [];
+                        populateNameDatalist();
+                        updateSummary();
+                        renderTable();
+                        onPersonNameChange();
+                        btn.disabled = false;
+                        btn.textContent = "Refresh";
+                    })
+                    .withFailureHandler(function (err) {
+                        alert("Error: " + err.message);
+                        btn.disabled = false;
+                        btn.textContent = "Refresh";
+                    })
+                    .verifyExamsAccess(savedPasscode);
+            }
+
+            /* ---------- tabs ---------- */
+
+            function switchView(viewName) {
+                document.getElementById("approvalsView").style.display = viewName === "approvals" ? "block" : "none";
+                document.getElementById("personView").style.display = viewName === "person" ? "block" : "none";
+                document.getElementById("scheduleView").style.display = viewName === "schedule" ? "block" : "none";
+                document.getElementById("peopleView").style.display = viewName === "people" ? "block" : "none";
+
+                document.getElementById("tabApprovalsBtn").className =
+                    viewName === "approvals" ? "tab-btn active" : "tab-btn";
+                document.getElementById("tabPersonBtn").className =
+                    viewName === "person" ? "tab-btn active" : "tab-btn";
+                document.getElementById("tabScheduleBtn").className =
+                    viewName === "schedule" ? "tab-btn active" : "tab-btn";
+                document.getElementById("tabPeopleBtn").className =
+                    viewName === "people" ? "tab-btn active" : "tab-btn";
+
+                if (viewName === "person") onPersonNameChange();
+                if (viewName === "people") loadPeople();
+                if (viewName === "schedule") {
+                    google.script.run
+                        .withSuccessHandler(function (sched) {
+                            allSchedules = sched || [];
+                            renderExistingSchedules();
+                        })
+                        .getExamSchedule();
+                }
+            }
+
+            /* ---------- schedule builder ---------- */
+
+            function copyMondayTimes() {
+                const rows = Array.from(document.querySelectorAll("#schedBuilderBody tr"));
+                if (rows.length < 2) return;
+                const mon = rows[0];
+                const amS = mon.querySelector(".sb-am-s").value;
+                const amF = mon.querySelector(".sb-am-f").value;
+                const pmS = mon.querySelector(".sb-pm-s").value;
+                const pmF = mon.querySelector(".sb-pm-f").value;
+
+                for (let i = 1; i < rows.length; i++) {
+                    rows[i].querySelector(".sb-am-s").value = amS;
+                    rows[i].querySelector(".sb-am-f").value = amF;
+                    rows[i].querySelector(".sb-pm-s").value = pmS;
+                    rows[i].querySelector(".sb-pm-f").value = pmF;
+                }
+            }
+
+            // Returns "HH:MM", "" (blank) or null (invalid).
+            function normaliseTime(str) {
+                const t = String(str || "").trim().replace(".", ":");
+                if (!t) return "";
+                const m = /^(\d{1,2}):(\d{2})$/.exec(t);
+                if (!m) return null;
+                const h = parseInt(m[1], 10);
+                const min = parseInt(m[2], 10);
+                if (h > 23 || min > 59) return null;
+                return (h < 10 ? "0" : "") + h + ":" + m[2];
+            }
+
+            function submitNewSchedule() {
+                const role = document.getElementById("schedRoleInput").value;
+                const period = document.getElementById("schedPeriodInput").value.trim();
+                const rawWeek = document.getElementById("schedWeekInput").value.trim();
+                const statusEl = document.getElementById("schedStatusMsg");
+                const btn = document.getElementById("saveSchedBtn");
+
+                function fail(msg) {
+                    statusEl.style.color = "#B91C1C";
+                    statusEl.textContent = msg;
+                }
+
+                if (!period) return fail("Please enter an Exam Period.");
+                if (!rawWeek) return fail("Please choose a Week Commencing date.");
+
+                let week = rawWeek;
+                if (/^\d{4}-\d{2}-\d{2}$/.test(rawWeek)) {
+                    const parts = rawWeek.split("-");
+                    week = parts[2] + "/" + parts[1] + "/" + parts[0].slice(2);
+                }
+
+                const days = [];
+                let problem = "";
+                let anyTimes = false;
+                document.querySelectorAll("#schedBuilderBody tr").forEach(function (tr) {
+                    const day = tr.dataset.day;
+                    const amS = normaliseTime(tr.querySelector(".sb-am-s").value);
+                    const amF = normaliseTime(tr.querySelector(".sb-am-f").value);
+                    const pmS = normaliseTime(tr.querySelector(".sb-pm-s").value);
+                    const pmF = normaliseTime(tr.querySelector(".sb-pm-f").value);
+
+                    if ([amS, amF, pmS, pmF].indexOf(null) !== -1) {
+                        problem = problem || day + ": times must look like 08:00.";
+                        return;
+                    }
+                    if ((amS && !amF) || (!amS && amF)) problem = problem || day + ": AM needs both a start and finish.";
+                    if ((pmS && !pmF) || (!pmS && pmF)) problem = problem || day + ": PM needs both a start and finish.";
+                    if (amS && amF && parseHoursToMins(amF) <= parseHoursToMins(amS))
+                        problem = problem || day + ": AM finish must be after AM start.";
+                    if (pmS && pmF && parseHoursToMins(pmF) <= parseHoursToMins(pmS))
+                        problem = problem || day + ": PM finish must be after PM start.";
+                    if (amS || pmS) anyTimes = true;
+
+                    days.push({ day: day, amStart: amS, amFinish: amF, pmStart: pmS, pmFinish: pmF });
+                });
+
+                if (problem) return fail(problem);
+                if (!anyTimes) return fail("Please enter at least one session time.");
+
+                btn.disabled = true;
+                btn.textContent = "Saving Schedule...";
+                statusEl.textContent = "";
+
+                google.script.run
+                    .withSuccessHandler(function (updatedSched) {
+                        allSchedules = updatedSched || [];
+                        renderExistingSchedules();
+                        statusEl.style.color = "#1B5E20";
+                        statusEl.textContent =
+                            'Saved! "' + period + " — Week Com " + week + '" (' + role + ") is now live on the form.";
+                        btn.disabled = false;
+                        btn.textContent = "Save Exam Schedule to Form";
+                    })
+                    .withFailureHandler(function (err) {
+                        fail("Error: " + err.message);
+                        btn.disabled = false;
+                        btn.textContent = "Save Exam Schedule to Form";
+                    })
+                    .saveExamSchedule(savedPasscode, { role: role, period: period, week: week, days: days });
+            }
+
+            function renderExistingSchedules() {
+                const dl = document.getElementById("periodOptionsList");
+                const periods = Array.from(
+                    new Set(
+                        allSchedules.map(function (s) {
+                            return s.period;
+                        })
+                    )
+                );
+                dl.innerHTML = "";
+                periods.forEach(function (p) {
+                    const opt = document.createElement("option");
+                    opt.value = p;
+                    dl.appendChild(opt);
+                });
+
+                const container = document.getElementById("existingSchedulesList");
+                container.innerHTML = "";
+
+                const grouped = {};
+                allSchedules.forEach(function (s) {
+                    const key =
+                        (s.role || "Supporting Invigilator") +
+                        "||" +
+                        s.period +
+                        "||" +
+                        s.week +
+                        "||" +
+                        (s.source || "sheet");
+                    if (!grouped[key]) grouped[key] = [];
+                    grouped[key].push(s);
+                });
+
+                const entries = Object.entries(grouped);
+                if (entries.length === 0) {
+                    const p = document.createElement("p");
+                    p.style.color = "#475569";
+                    p.style.fontSize = "13.5px";
+                    p.textContent = "No exam schedules found.";
+                    container.appendChild(p);
+                    return;
+                }
+
+                entries.forEach(function (entry) {
+                    const key = entry[0];
+                    const rows = entry[1];
+                    const parts = key.split("||");
+                    const role = parts[0];
+                    const period = parts[1];
+                    const week = parts[2];
+                    const source = parts[3];
+
+                    const box = document.createElement("div");
+                    box.style.cssText =
+                        "border:1.5px solid #D0D9E8; border-left:4px solid #0D2D6C; border-radius:8px; padding:12px 14px; margin-bottom:10px; background:#fff; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px;";
+
+                    const info = document.createElement("div");
+                    const badge = document.createElement("span");
+                    badge.textContent = role;
+                    badge.style.cssText =
+                        "display:inline-block; background:#0D2D6C; color:#fff; font-size:11px; font-weight:700; padding:2px 7px; border-radius:4px; margin-right:8px;";
+                    info.appendChild(badge);
+
+                    const titleSpan = document.createElement("span");
+                    titleSpan.style.fontWeight = "700";
+                    titleSpan.style.color = "#1E293B";
+                    titleSpan.textContent = period + " — Week Com " + week + " (" + rows.length + " day(s))";
+                    info.appendChild(titleSpan);
+                    box.appendChild(info);
+
+                    if (source === "portal") {
+                        const delBtn = document.createElement("button");
+                        delBtn.type = "button";
+                        delBtn.textContent = "Delete Week";
+                        delBtn.style.cssText =
+                            "padding:6px 12px; background:#DC2626; color:#fff; border:none; border-radius:5px; font-size:12px; font-weight:700; cursor:pointer;";
+                        delBtn.onclick = function () {
+                            if (!confirm("Delete " + period + " — Week Com " + week + " (" + role + ")?")) return;
+                            delBtn.disabled = true;
+                            delBtn.textContent = "Deleting...";
+                            google.script.run
+                                .withSuccessHandler(function (updated) {
+                                    allSchedules = updated || [];
+                                    renderExistingSchedules();
+                                })
+                                .withFailureHandler(function (err) {
+                                    alert("Error: " + err.message);
+                                    delBtn.disabled = false;
+                                    delBtn.textContent = "Delete Week";
+                                })
+                                .deleteExamWeek(savedPasscode, role, period, week);
+                        };
+                        box.appendChild(delBtn);
+                    } else {
+                        const tag = document.createElement("span");
+                        tag.textContent = "From Sheet Tab";
+                        tag.style.cssText =
+                            "font-size:11.5px; background:#E2E8F0; color:#334155; padding:4px 8px; border-radius:4px; font-weight:600;";
+                        box.appendChild(tag);
+                    }
+
+                    container.appendChild(box);
+                });
+            }
+
+            /* ---------- invigilator list (drop-down names for the claim form) ---------- */
+
+            let allPeople = [];
+
+            function loadPeople() {
+                google.script.run
+                    .withSuccessHandler(function (list) {
+                        allPeople = list || [];
+                        renderPeople();
+                    })
+                    .withFailureHandler(function (err) {
+                        const el = document.getElementById("peopleStatusMsg");
+                        el.style.color = "#B91C1C";
+                        el.textContent = "Error: " + err.message;
+                    })
+                    .getInvigilatorList();
+            }
+
+            function renderPeople() {
+                const box = document.getElementById("peopleList");
+                box.innerHTML = "";
+                document.getElementById("peopleHeading").textContent =
+                    "Invigilators on the Form (" + allPeople.length + ")";
+
+                if (allPeople.length === 0) {
+                    const p = document.createElement("p");
+                    p.style.color = "#475569";
+                    p.style.fontSize = "13.5px";
+                    p.textContent = "No invigilators added yet.";
+                    box.appendChild(p);
+                    return;
+                }
+
+                allPeople.forEach(function (name) {
+                    const row = document.createElement("div");
+                    row.style.cssText =
+                        "border:1.5px solid #D0D9E8; border-left:4px solid #78BE20; border-radius:8px; padding:10px 14px; margin-bottom:8px; background:#fff; display:flex; justify-content:space-between; align-items:center; gap:10px;";
+
+                    const label = document.createElement("span");
+                    label.style.fontWeight = "700";
+                    label.style.color = "#1E293B";
+                    label.textContent = name;
+                    row.appendChild(label);
+
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "delete-btn";
+                    btn.textContent = "Remove";
+                    btn.onclick = function () {
+                        removePerson(name, btn);
+                    };
+                    row.appendChild(btn);
+
+                    box.appendChild(row);
+                });
+            }
+
+            function addPerson() {
+                const input = document.getElementById("newPersonName");
+                const statusEl = document.getElementById("peopleStatusMsg");
+                const btn = document.getElementById("addPersonBtn");
+                const name = input.value.replace(/\s+/g, " ").trim();
+
+                if (name.length < 2) {
+                    statusEl.style.color = "#B91C1C";
+                    statusEl.textContent = "Please enter the invigilator's full name.";
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.textContent = "Adding...";
+                statusEl.textContent = "";
+
+                google.script.run
+                    .withSuccessHandler(function (list) {
+                        allPeople = list || [];
+                        renderPeople();
+                        input.value = "";
+                        statusEl.style.color = "#1B5E20";
+                        statusEl.textContent = 'Added! "' + name + '" now appears in the claim form drop-down.';
+                        btn.disabled = false;
+                        btn.textContent = "Add Person";
+                        input.focus();
+                    })
+                    .withFailureHandler(function (err) {
+                        statusEl.style.color = "#B91C1C";
+                        statusEl.textContent = "Error: " + err.message;
+                        btn.disabled = false;
+                        btn.textContent = "Add Person";
+                    })
+                    .addInvigilator(savedPasscode, name, managerFullName);
+            }
+
+            function removePerson(name, btn) {
+                if (
+                    !confirm(
+                        'Remove "' + name + '" from the claim form drop-down?\n\nTheir existing claims and time sheet are not affected.'
+                    )
+                )
+                    return;
+                btn.disabled = true;
+                btn.textContent = "Removing...";
+                google.script.run
+                    .withSuccessHandler(function (list) {
+                        allPeople = list || [];
+                        renderPeople();
+                    })
+                    .withFailureHandler(function (err) {
+                        alert("Error: " + err.message);
+                        btn.disabled = false;
+                        btn.textContent = "Remove";
+                    })
+                    .removeInvigilator(savedPasscode, name);
+            }
+
+            /* ---------- approvals view ---------- */
+
+            function populateNameDatalist() {
+                const names = Array.from(
+                    new Set(
+                        allClaims
+                            .map(function (c) {
+                                return c.invigilatorName;
+                            })
+                            .filter(Boolean)
+                    )
+                ).sort();
+                const dl = document.getElementById("invigilatorList");
+                dl.innerHTML = "";
+                names.forEach(function (n) {
+                    const opt = document.createElement("option");
+                    opt.value = n;
+                    dl.appendChild(opt);
+                });
+            }
+
+            function updateSummary() {
+                document.getElementById("totalEntries").textContent = allClaims.length;
+                document.getElementById("pendingCount").textContent = allClaims.filter(function (c) {
+                    return isPendingStatus(c.status);
+                }).length;
+                document.getElementById("approvedCount").textContent = allClaims.filter(function (c) {
+                    return isApprovedStatus(c.status);
+                }).length;
+            }
+
+            let currentGroups = [];
+            const expandedGroups = new Set();
+
+            function groupKeyOf(c) {
+                return (
+                    String(c.invigilatorName || "").trim().toLowerCase() + "||" +
+                    String(c.examPeriod || "").trim().toLowerCase() + "||" +
+                    normaliseWeek(c.weekCommencing)
+                );
+            }
+
+            function dayOrder(c) {
+                const i = DAY_INDEX[String(c.day || "").trim().toUpperCase()];
+                return i === undefined ? 99 : i;
+            }
+
+            function renderTable() {
+                const statusVal = document.getElementById("statusFilter").value;
+                const query = document.getElementById("searchBox").value.toLowerCase();
+                const tbody = document.getElementById("tableBody");
+                tbody.innerHTML = "";
+
+                let totalMins = 0;
+
+                currentFiltered = allClaims.filter(function (c) {
+                    const approved = isApprovedStatus(c.status);
+                    const matchesStatus =
+                        !statusVal || (statusVal === "Approved" ? approved : isPendingStatus(c.status));
+                    const matchesSearch =
+                        !query ||
+                        [c.invigilatorName, c.examPeriod, c.weekCommencing, c.day].some(function (v) {
+                            return String(v == null ? "" : v)
+                                .toLowerCase()
+                                .includes(query);
+                        });
+                    return matchesStatus && matchesSearch;
+                });
+
+                currentFiltered.forEach(function (c) {
+                    totalMins += parseHoursToMins(c.dailyTotal);
+                });
+                document.getElementById("filteredHours").textContent = formatMins(totalMins);
+
+                currentGroups = [];
+                if (currentFiltered.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6">No matching claims found.</td></tr>';
+                    return;
+                }
+
+                // One group per person + exam period + week.
+                const map = {};
+                currentFiltered.forEach(function (c) {
+                    const k = groupKeyOf(c);
+                    if (!map[k]) {
+                        map[k] = {
+                            key: k,
+                            name: c.invigilatorName,
+                            period: c.examPeriod,
+                            week: normaliseWeek(c.weekCommencing),
+                            rows: [],
+                        };
+                        currentGroups.push(map[k]);
+                    }
+                    map[k].rows.push(c);
+                });
+
+                currentGroups.forEach(function (g, gi) {
+                    g.rows.sort(function (a, b) {
+                        return dayOrder(a) - dayOrder(b) || Number(a.rowNumber) - Number(b.rowNumber);
+                    });
+
+                    let gMins = 0;
+                    let pending = 0;
+                    g.rows.forEach(function (c) {
+                        gMins += parseHoursToMins(c.dailyTotal);
+                        if (!isApprovedStatus(c.status)) pending++;
+                    });
+                    const approvedN = g.rows.length - pending;
+                    const open = expandedGroups.has(g.key);
+
+                    let badge;
+                    if (pending === 0) badge = '<span class="badge-approved">Approved</span>';
+                    else if (approvedN === 0) badge = '<span class="badge-pending">Pending</span>';
+                    else badge = '<span class="badge-pending">' + pending + " pending / " + approvedN + " approved</span>";
+
+                    const action =
+                        pending > 0
+                            ? '<button type="button" class="approve-btn" onclick="event.stopPropagation(); approveWeek(' +
+                              gi + ', this)">Approve Week (' + pending + ")</button>"
+                            : '<span style="color:#64748B;font-size:12px;">Authorised</span>';
+
+                    const tr = document.createElement("tr");
+                    tr.className = "group-row";
+                    tr.title = open ? "Click to hide days" : "Click to show days";
+                    tr.onclick = function () {
+                        toggleGroup(gi);
+                    };
+                    tr.innerHTML =
+                        '<td><span class="chev">' + (open ? "&#9660;" : "&#9654;") + '</span><strong class="group-name">' +
+                        esc(g.name) + "</strong></td>" +
+                        "<td>" + esc(g.period) + " (" + esc(g.week) + ")</td>" +
+                        "<td>" + g.rows.length + " day" + (g.rows.length === 1 ? "" : "s") + "</td>" +
+                        "<td><strong>" + formatMins(gMins) + "</strong></td>" +
+                        "<td>" + badge + "</td>" +
+                        "<td>" + action + "</td>";
+                    tbody.appendChild(tr);
+
+                    if (!open) return;
+
+                    let dayHtml = "";
+                    g.rows.forEach(function (c) {
+                        const approved = isApprovedStatus(c.status);
+                        const badgeClass = approved ? "badge-approved" : "badge-pending";
+                        const sigDisplay = c.signatureText || c.certifiedName || "Signed";
+                        const editBtn =
+                            '<button type="button" class="edit-btn" onclick="openEdit(' + Number(c.rowNumber) + ')">Edit</button>' +
+                            '<button type="button" class="delete-btn" onclick="deleteClaim(' + Number(c.rowNumber) + ')">Delete</button>';
+                        const actionHtml = approved
+                            ? '<span style="color:#64748B;font-size:12px;">Authorised</span> ' + editBtn
+                            : '<button class="approve-btn" onclick="approveSingle(' + Number(c.rowNumber) + ', this)">Approve</button> ' + editBtn;
+
+                        dayHtml +=
+                            "<tr>" +
+                            "<td><strong>" + esc(c.day) + "</strong></td>" +
+                            "<td>" + (c.amWorked === "Yes" ? esc(c.amStart) + "-" + esc(c.amFinish) : "-") + "</td>" +
+                            "<td>" + (c.pmWorked === "Yes" ? esc(c.pmStart) + "-" + esc(c.pmFinish) : "-") + "</td>" +
+                            "<td>" + extraMinsOf(c) + "m</td>" +
+                            "<td><strong>" + esc(c.dailyTotal) + "</strong></td>" +
+                            '<td><span class="sig-text">' + esc(sigDisplay) + "</span></td>" +
+                            '<td><span class="' + badgeClass + '">' + esc(c.status) + "</span></td>" +
+                            '<td class="day-actions">' + actionHtml + "</td>" +
+                            "</tr>";
+                    });
+
+                    const detail = document.createElement("tr");
+                    detail.className = "detail-row";
+                    detail.innerHTML =
+                        '<td colspan="6"><div class="day-wrap"><table class="day-table"><thead><tr>' +
+                        "<th>Day</th><th>AM</th><th>PM</th><th>ET/RB</th><th>Total</th>" +
+                        "<th>Digital Signature</th><th>Status</th><th>Action</th>" +
+                        "</tr></thead><tbody>" + dayHtml + "</tbody></table></div></td>";
+                    tbody.appendChild(detail);
+                });
+            }
+
+            function toggleGroup(gi) {
+                const g = currentGroups[gi];
+                if (!g) return;
+                if (expandedGroups.has(g.key)) expandedGroups.delete(g.key);
+                else expandedGroups.add(g.key);
+                renderTable();
+            }
+
+            // Approves every pending day in one person + week group.
+            function approveWeek(gi, btn) {
+                const g = currentGroups[gi];
+                if (!g) return;
+                const rows = g.rows
+                    .filter(function (c) {
+                        return isPendingStatus(c.status);
+                    })
+                    .map(function (c) {
+                        return c.rowNumber;
+                    });
+                if (rows.length === 0) return;
+                if (!confirm("Approve " + rows.length + " pending day(s) for " + g.name + " — " + g.period + " (" + g.week + ")?")) return;
+
+                document.querySelectorAll(".approve-btn, .edit-btn, .delete-btn, #bulkBtn").forEach(function (b) {
+                    b.disabled = true;
+                });
+                btn.textContent = "Approving...";
+
+                google.script.run
+                    .withSuccessHandler(function (updated) {
+                        allClaims = updated || [];
+                        populateNameDatalist();
+                        updateSummary();
+                        renderTable();
+                        onPersonNameChange();
+                        document.getElementById("bulkBtn").disabled = false;
+                    })
+                    .withFailureHandler(function (err) {
+                        alert("Error: " + err.message);
+                        renderTable();
+                        document.getElementById("bulkBtn").disabled = false;
+                    })
+                    .approveMultipleRows(savedPasscode, rows, managerFullName);
+            }
+
+            function approveSingle(rowNumber, btn) {
+                document.querySelectorAll(".approve-btn, #bulkBtn").forEach(function (b) {
+                    b.disabled = true;
+                });
+                btn.textContent = "Approving...";
+
+                google.script.run
+                    .withSuccessHandler(function (updated) {
+                        allClaims = updated || [];
+                        populateNameDatalist();
+                        updateSummary();
+                        renderTable();
+                        document.getElementById("bulkBtn").disabled = false;
+                    })
+                    .withFailureHandler(function (err) {
+                        alert("Error: " + err.message);
+                        document.querySelectorAll(".approve-btn, #bulkBtn").forEach(function (b) {
+                            b.disabled = false;
+                        });
+                        btn.textContent = "Approve";
+                    })
+                    .approveMultipleRows(savedPasscode, [Number(rowNumber)], managerFullName);
+            }
+
+            function approveFiltered() {
+                const pendingRows = currentFiltered
+                    .filter(function (c) {
+                        return isPendingStatus(c.status);
+                    })
+                    .map(function (c) {
+                        return c.rowNumber;
+                    });
+                if (pendingRows.length === 0) {
+                    alert("There are no pending claims in your current filter to approve.");
+                    return;
+                }
+                if (!confirm("Approve all " + pendingRows.length + " pending claim row(s) shown below?")) return;
+                document.querySelectorAll(".approve-btn, #bulkBtn").forEach(function (b) {
+                    b.disabled = true;
+                });
+                const btn = document.getElementById("bulkBtn");
+                btn.textContent = "Approving All...";
+                google.script.run
+                    .withSuccessHandler(function (updated) {
+                        allClaims = updated || [];
+                        populateNameDatalist();
+                        updateSummary();
+                        renderTable();
+                        btn.disabled = false;
+                        btn.textContent = "Approve All Filtered";
+                    })
+                    .withFailureHandler(function (err) {
+                        alert("Error: " + err.message);
+                        document.querySelectorAll(".approve-btn, #bulkBtn").forEach(function (b) {
+                            b.disabled = false;
+                        });
+                        btn.textContent = "Approve All Filtered";
+                    })
+                    .approveMultipleRows(savedPasscode, pendingRows, managerFullName);
+            }
+
+            /* ---------- delete a single claim row ---------- */
+
+            function deleteClaim(rowNumber) {
+                const c = allClaims.find(function (x) {
+                    return Number(x.rowNumber) === Number(rowNumber);
+                });
+                if (!c) return;
+
+                const approvedNote = isApprovedStatus(c.status)
+                    ? "\n\nThis row is already approved, so it will also be removed from the invigilator's own time sheet tab."
+                    : "";
+                const ok = confirm(
+                    "Delete this claim row?\n\n" +
+                        (c.invigilatorName || "") + " — " + (c.examPeriod || "") +
+                        " (" + normaliseWeek(c.weekCommencing) + "), " + (c.day || "") +
+                        " — " + (c.dailyTotal || "") + approvedNote +
+                        "\n\nA copy is kept in the Deleted_Claims tab."
+                );
+                if (!ok) return;
+
+                document.querySelectorAll(".approve-btn, .edit-btn, .delete-btn, #bulkBtn").forEach(function (b) {
+                    b.disabled = true;
+                });
+
+                google.script.run
+                    .withSuccessHandler(function (updated) {
+                        allClaims = updated || [];
+                        populateNameDatalist();
+                        updateSummary();
+                        renderTable();
+                        onPersonNameChange();
+                        document.getElementById("bulkBtn").disabled = false;
+                    })
+                    .withFailureHandler(function (err) {
+                        alert("Error: " + err.message);
+                        renderTable();
+                        document.getElementById("bulkBtn").disabled = false;
+                    })
+                    .deleteClaimRow(
+                        savedPasscode,
+                        Number(rowNumber),
+                        {
+                            invigilatorName: c.invigilatorName,
+                            examPeriod: c.examPeriod,
+                            weekCommencing: c.weekCommencing,
+                            day: c.day,
+                            timestamp: c.timestamp,
+                        },
+                        managerFullName
+                    );
+            }
+
+            /* ---------- edit a single claim row ---------- */
+
+            let editingRow = null;
+
+            function editVal(id) {
+                return document.getElementById(id).value;
+            }
+
+            function openEdit(rowNumber) {
+                const c = allClaims.find(function (x) {
+                    return Number(x.rowNumber) === Number(rowNumber);
+                });
+                if (!c) return;
+                editingRow = Number(rowNumber);
+
+                document.getElementById("editWho").textContent =
+                    (c.invigilatorName || "") + " — " + (c.examPeriod || "") + " (" + normaliseWeek(c.weekCommencing) + "), " + (c.day || "");
+                document.getElementById("editAmWorked").checked = c.amWorked === "Yes";
+                document.getElementById("editAmStart").value = c.amStart || "";
+                document.getElementById("editAmFinish").value = c.amFinish || "";
+                document.getElementById("editAmExtra").value = Number(c.amExtra || 0);
+                document.getElementById("editPmWorked").checked = c.pmWorked === "Yes";
+                document.getElementById("editPmStart").value = c.pmStart || "";
+                document.getElementById("editPmFinish").value = c.pmFinish || "";
+                document.getElementById("editPmExtra").value = Number(c.pmExtra || 0);
+                document.getElementById("editApprovedNote").style.display = isApprovedStatus(c.status) ? "block" : "none";
+                document.getElementById("editErr").textContent = "";
+                document.getElementById("editSaveBtn").disabled = false;
+                document.getElementById("editSaveBtn").textContent = "Save Changes";
+
+                updateEditTotal();
+                document.getElementById("editModal").style.display = "flex";
+            }
+
+            function closeEdit() {
+                document.getElementById("editModal").style.display = "none";
+                editingRow = null;
+            }
+
+            document.addEventListener("keydown", function (e) {
+                if (e.key === "Escape" && editingRow !== null) closeEdit();
+            });
+
+            // Minutes for one session from the edit form (extra minutes count even if the session is unticked).
+            function editSessionMins(prefix) {
+                const worked = document.getElementById("edit" + prefix + "Worked").checked;
+                const extra = parseInt(editVal("edit" + prefix + "Extra"), 10) || 0;
+                if (!worked) return extra;
+                return sessionMins(editVal("edit" + prefix + "Start"), editVal("edit" + prefix + "Finish"), extra);
+            }
+
+            function updateEditTotal() {
+                document.getElementById("editTotal").textContent =
+                    "Day total: " + formatMins(editSessionMins("Am") + editSessionMins("Pm"));
+            }
+
+            function saveEdit() {
+                const errEl = document.getElementById("editErr");
+                const btn = document.getElementById("editSaveBtn");
+                errEl.textContent = "";
+
+                function fail(msg) {
+                    errEl.textContent = msg;
+                }
+
+                const out = {};
+                const sessions = [
+                    { key: "am", prefix: "Am", label: "AM" },
+                    { key: "pm", prefix: "Pm", label: "PM" },
+                ];
+
+                for (let i = 0; i < sessions.length; i++) {
+                    const s = sessions[i];
+                    const worked = document.getElementById("edit" + s.prefix + "Worked").checked;
+                    const start = normaliseTime(editVal("edit" + s.prefix + "Start"));
+                    const finish = normaliseTime(editVal("edit" + s.prefix + "Finish"));
+                    const extraRaw = editVal("edit" + s.prefix + "Extra").trim();
+                    const extra = extraRaw === "" ? 0 : Number(extraRaw);
+
+                    if (!Number.isInteger(extra) || extra < 0) return fail(s.label + " extra minutes must be a whole number (0 or more).");
+
+                    if (worked) {
+                        if (!start || !finish) return fail(s.label + ": enter a start and finish time like 08:00.");
+                        if (parseHoursToMins(finish) <= parseHoursToMins(start))
+                            return fail(s.label + " finish must be after the start.");
+                    }
+
+                    out[s.key + "Worked"] = worked ? "Yes" : "No";
+                    out[s.key + "Start"] = worked ? start : "";
+                    out[s.key + "Finish"] = worked ? finish : "";
+                    out[s.key + "Extra"] = extra;
+                }
+
+                out.dailyTotal = formatMins(editSessionMins("Am") + editSessionMins("Pm"));
+
+                btn.disabled = true;
+                btn.textContent = "Saving...";
+
+                google.script.run
+                    .withSuccessHandler(function (updated) {
+                        allClaims = updated || [];
+                        populateNameDatalist();
+                        updateSummary();
+                        renderTable();
+                        onPersonNameChange();
+                        closeEdit();
+                    })
+                    .withFailureHandler(function (err) {
+                        fail("Error: " + err.message);
+                        btn.disabled = false;
+                        btn.textContent = "Save Changes";
+                    })
+                    .updateClaimRow(savedPasscode, editingRow, out, managerFullName);
+            }
+
+            /* ---------- individual time sheet view ---------- */
+
+            // Name + status filter only (no month). Used to work out which months to offer.
+            // Exact name match if there is one, otherwise partial match.
+            function getPersonBase() {
+                const q = document.getElementById("personNameInput").value.trim().toLowerCase();
+                const statusMode = document.getElementById("personStatusFilter").value;
+                if (!q) return [];
+
+                const exact = allClaims.filter(function (c) {
+                    return String(c.invigilatorName || "").trim().toLowerCase() === q;
+                });
+                const base = exact.length
+                    ? exact
+                    : allClaims.filter(function (c) {
+                          return String(c.invigilatorName || "").toLowerCase().includes(q);
+                      });
+
+                return base.filter(function (c) {
+                    return !statusMode || isApprovedStatus(c.status);
+                });
+            }
+
+            // Rebuilds the month dropdown from this person's data, keeping the selection if it is still valid.
+            function updateMonthOptions() {
+                const sel = document.getElementById("personMonthFilter");
+                const previous = sel.value;
+                const keys = Array.from(
+                    new Set(
+                        getPersonBase()
+                            .map(claimDayDate)
+                            .filter(Boolean)
+                            .map(monthKey)
+                    )
+                ).sort();
+
+                sel.innerHTML = '<option value="">All Months</option>';
+                keys.forEach(function (k) {
+                    const opt = document.createElement("option");
+                    opt.value = k;
+                    opt.textContent = monthLabel(k);
+                    sel.appendChild(opt);
+                });
+                sel.value = keys.indexOf(previous) !== -1 ? previous : "";
+            }
+
+            // Called when the name or the Approved/All filter changes.
+            function onPersonNameChange() {
+                updateMonthOptions();
+                renderPersonSheet();
+            }
+
+            // Name + status + month. Used by the on-screen sheet and both exports.
+            function getPersonMatches() {
+                const month = document.getElementById("personMonthFilter").value;
+                return getPersonBase().filter(function (c) {
+                    if (!month) return true;
+                    const d = claimDayDate(c);
+                    return d && monthKey(d) === month;
+                });
+            }
+
+            function renderPersonSheet() {
+                const container = document.getElementById("personSheetContainer");
+                container.innerHTML = "";
+
+                const rawQuery = document.getElementById("personNameInput").value.trim();
+                if (!rawQuery) {
+                    const p = document.createElement("p");
+                    p.style.color = "#475569";
+                    p.style.fontSize = "14px";
+                    p.textContent = "Enter or select an invigilator's name above to view their time sheet table.";
+                    container.appendChild(p);
+                    return;
+                }
+
+                const matches = getPersonMatches();
+
+                if (matches.length === 0) {
+                    const p = document.createElement("p");
+                    p.style.color = "#991B1B";
+                    p.style.fontWeight = "600";
+                    p.textContent = 'No matching records found for "' + rawQuery + '".';
+                    container.appendChild(p);
+                    return;
+                }
+
+                const names = Array.from(
+                    new Set(
+                        matches.map(function (c) {
+                            return c.invigilatorName;
+                        })
+                    )
+                );
+                const weeksMap = {};
+                let grandTotalMins = 0;
+
+                matches.forEach(function (c) {
+                    const wkKey = String(c.examPeriod || "").trim() + " — WEEK COM " + normaliseWeek(c.weekCommencing);
+                    if (!weeksMap[wkKey]) weeksMap[wkKey] = [];
+                    weeksMap[wkKey].push(c);
+                });
+
+                const monthSel = document.getElementById("personMonthFilter");
+                const monthText = monthSel.value ? " — " + monthLabel(monthSel.value) : "";
+
+                const heading = document.createElement("h3");
+                heading.style.color = "#0D2D6C";
+                heading.style.margin = "0 0 12px";
+                heading.textContent =
+                    names.length === 1
+                        ? "Time Sheet Record: " + names[0] + monthText
+                        : "Time Sheet Record: " + names.join(", ") + monthText + " (several names match — type the full name)";
+                container.appendChild(heading);
+
+                Object.entries(weeksMap).forEach(function (entry) {
+                    const wkTitle = entry[0];
+                    const rows = entry[1];
+                    let weekMins = 0;
+
+                    const block = document.createElement("div");
+                    block.className = "week-block";
+
+                    const banner = document.createElement("div");
+                    banner.className = "week-banner";
+
+                    const wrap = document.createElement("div");
+                    wrap.className = "table-wrap";
+                    wrap.style.border = "none";
+                    wrap.style.borderRadius = "0";
+
+                    const tbl = document.createElement("table");
+                    const thead = document.createElement("thead");
+                    const headRow = document.createElement("tr");
+                    [
+                        "Day",
+                        "AM Start",
+                        "AM Finish",
+                        "AM",
+                        "PM Start",
+                        "PM Finish",
+                        "PM",
+                        "AM Hours",
+                        "PM Hours",
+                        "Day Total",
+                        "Status",
+                    ].forEach(function (col) {
+                        const th = document.createElement("th");
+                        th.textContent = col;
+                        headRow.appendChild(th);
+                    });
+                    thead.appendChild(headRow);
+                    tbl.appendChild(thead);
+
+                    const tbody = document.createElement("tbody");
+                    rows.forEach(function (r) {
+                        const amWorked = r.amWorked === "Yes";
+                        const pmWorked = r.pmWorked === "Yes";
+                        const amM = amWorked ? sessionMins(r.amStart, r.amFinish, r.amExtra) : Number(r.amExtra || 0);
+                        const pmM = pmWorked ? sessionMins(r.pmStart, r.pmFinish, r.pmExtra) : Number(r.pmExtra || 0);
+                        const dayM = amM + pmM;
+                        weekMins += dayM;
+                        grandTotalMins += dayM;
+
+                        const tr = document.createElement("tr");
+                        [
+                            { text: r.day, bold: true },
+                            { text: amWorked ? r.amStart : "-" },
+                            { text: amWorked ? r.amFinish : "-" },
+                            { text: amWorked ? "☑" : "☐", center: true },
+                            { text: pmWorked ? r.pmStart : "-" },
+                            { text: pmWorked ? r.pmFinish : "-" },
+                            { text: pmWorked ? "☑" : "☐", center: true },
+                            { text: amM > 0 ? formatMins(amM) : "-", bold: true, green: true },
+                            { text: pmM > 0 ? formatMins(pmM) : "-", bold: true, green: true },
+                            { text: formatMins(dayM), bold: true },
+                            { text: r.status },
+                        ].forEach(function (cell) {
+                            const td = document.createElement("td");
+                            td.textContent = cell.text == null ? "" : cell.text;
+                            if (cell.bold) td.style.fontWeight = "700";
+                            if (cell.center) {
+                                td.style.textAlign = "center";
+                                td.style.fontSize = "15px";
+                            }
+                            if (cell.green) td.style.background = "#F0FDF4";
+                            tr.appendChild(td);
+                        });
+                        tbody.appendChild(tr);
+                    });
+
+                    tbl.appendChild(tbody);
+                    wrap.appendChild(tbl);
+
+                    const leftSpan = document.createElement("span");
+                    leftSpan.textContent = wkTitle;
+                    const rightSpan = document.createElement("span");
+                    rightSpan.textContent = "Week Total: " + formatMins(weekMins);
+                    banner.appendChild(leftSpan);
+                    banner.appendChild(rightSpan);
+
+                    block.appendChild(banner);
+                    block.appendChild(wrap);
+                    container.appendChild(block);
+                });
+
+                const latest = matches[matches.length - 1];
+                const footer = document.createElement("div");
+                footer.className = "person-footer";
+
+                const sigDiv = document.createElement("div");
+                sigDiv.textContent =
+                    "Certified Signature: " +
+                    (latest.signatureText || latest.certifiedName || "") +
+                    "  |  Date: " +
+                    (latest.claimDate || "");
+                sigDiv.style.fontWeight = "600";
+                sigDiv.style.color = "#0D2D6C";
+
+                const totalDiv = document.createElement("div");
+                totalDiv.textContent = "TOTAL HOURS CLAIMED: " + formatMins(grandTotalMins);
+                totalDiv.style.fontSize = "18px";
+                totalDiv.style.fontWeight = "800";
+                totalDiv.style.color = "#2E7D32";
+
+                footer.appendChild(sigDiv);
+                footer.appendChild(totalDiv);
+                container.appendChild(footer);
+            }
+
+            /* ---------- export: time sheet laid out like the school's Google Sheet ---------- */
+
+            function formatHMS(mins) {
+                return formatMins(mins) + ":00";
+            }
+
+            // Downloads the looked-up person's time sheet(s) in the same layout as the Google Sheet form.
+            // Follows the name box, the Approved / All filter and the month filter on the Individual Time Sheet tab.
+            function exportPersonSheet() {
+                if (!document.getElementById("personNameInput").value.trim()) {
+                    alert("Please enter an invigilator name first.");
+                    return;
+                }
+                const matches = getPersonMatches();
+                if (matches.length === 0) {
+                    alert("No records to export for that name and filter.");
+                    return;
+                }
+
+                const BD = "border:1px solid #000000;";
+                const GREEN = "background:#A9C79B;";
+                const C = "text-align:center;vertical-align:middle;";
+                const B = "font-weight:bold;";
+                function td(content, style, attrs) {
+                    return "<td " + (attrs || "") + ' style="' + (style || "") + '">' + content + "</td>";
+                }
+
+                // One form per person + exam period + week.
+                const forms = {};
+                matches.forEach(function (c) {
+                    const name = String(c.invigilatorName || "").trim();
+                    const period = String(c.examPeriod || "").trim();
+                    const week = normaliseWeek(c.weekCommencing);
+                    const key = name + "||" + period + "||" + week;
+                    if (!forms[key]) forms[key] = { name: name, period: period, week: week, rows: [] };
+                    forms[key].rows.push(c);
+                });
+
+                let html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body>';
+
+                Object.keys(forms).sort().forEach(function (key) {
+                    const f = forms[key];
+                    let total = 0;
+
+                    let dayRows = "";
+                    f.rows.forEach(function (r) {
+                        const amWorked = r.amWorked === "Yes";
+                        const pmWorked = r.pmWorked === "Yes";
+                        const amM = amWorked ? sessionMins(r.amStart, r.amFinish, r.amExtra) : Number(r.amExtra || 0);
+                        const pmM = pmWorked ? sessionMins(r.pmStart, r.pmFinish, r.pmExtra) : Number(r.pmExtra || 0);
+                        total += amM + pmM;
+                        dayRows +=
+                            "<tr>" +
+                            td(esc(r.day), BD + "background:#E2E8F0;" + B) +
+                            td(amWorked ? esc(r.amStart) : "&nbsp;", BD + C) +
+                            td(amWorked ? esc(r.amFinish) : "&nbsp;", BD + C) +
+                            td(amWorked ? "&#9745;" : "&#9744;", BD + C + "font-size:13pt;") +
+                            td(pmWorked ? esc(r.pmStart) : "&nbsp;", BD + C) +
+                            td(pmWorked ? esc(r.pmFinish) : "&nbsp;", BD + C) +
+                            td(pmWorked ? "&#9745;" : "&#9744;", BD + C + "font-size:13pt;") +
+                            td(amM > 0 ? formatHMS(amM) : "&nbsp;", BD + C + B) +
+                            td("&nbsp;", BD + GREEN) +
+                            td(pmM > 0 ? formatHMS(pmM) : "&nbsp;", BD + C + B) +
+                            td("&nbsp;", BD) +
+                            "</tr>";
+                    });
+
+                    const latest = f.rows[f.rows.length - 1];
+                    const sig = latest.signatureText || latest.certifiedName || "";
+                    const claimDate = latest.claimDate || "";
+
+                    const heads = [
+                        "EXAM SESSIONS",
+                        "AM START<br>INC SET UP",
+                        "AM FINISH<br>INC PACK UP/SET UP",
+                        "SESSIONS<br>WORKED",
+                        "PM START<br>INC SET UP",
+                        "PM FINISH<br>INC PACK UP/SET UP",
+                        "SESSIONS<br>WORKED",
+                    ];
+
+                    html += '<table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:10pt;">';
+                    html += "<tr>" + td("UPTON-BY-CHESTER HIGH SCHOOL &mdash; INVIGILATOR TIME SHEET", "background:#0D2D6C;color:#FFFFFF;font-size:13pt;padding:4px 6px;" + B, 'colspan="11"') + "</tr>";
+                    html += "<tr>" +
+                        td("NAME:", B) + td(esc(f.name), B, 'colspan="4"') +
+                        td("EXAM PERIOD:", B) + td(esc(f.period), B, 'colspan="5"') + "</tr>";
+                    html += '<tr><td colspan="11">&nbsp;</td></tr>';
+                    html += "<tr>" +
+                        heads.map(function (h) { return td(h, BD + C + B + "font-size:9pt;"); }).join("") +
+                        td("ADDITIONAL HOURS AGREED WITH EXAM TEAM DUE TO ET / RB", BD + C + B + "font-size:9pt;", 'colspan="4"') + "</tr>";
+                    html += "<tr>" +
+                        td("WEEK COM " + esc(f.week), BD + B) +
+                        td("&nbsp;", BD + GREEN) + td("&nbsp;", BD + GREEN) + td("&nbsp;", BD + GREEN) +
+                        td("&nbsp;", BD + GREEN) + td("&nbsp;", BD + GREEN) + td("&nbsp;", BD + GREEN) +
+                        td("AM", BD + C + B) + td("&nbsp;", BD + GREEN) + td("PM", BD + C + B) + td("&nbsp;", BD) + "</tr>";
+                    html += dayRows;
+                    html += "<tr>" + td("&nbsp;", BD + GREEN, 'colspan="11"') + "</tr>";
+                    html += "<tr>" +
+                        td("&nbsp;", "", 'colspan="6"') +
+                        td("TOTAL HOURS CLAIMED", BD + "text-align:right;" + B, 'colspan="2"') +
+                        td(formatHMS(total), BD + GREEN + C + B) +
+                        td("&nbsp;", "", 'colspan="2"') + "</tr>";
+                    html += "<tr>" +
+                        td("&nbsp;", "", 'colspan="6"') +
+                        td("TOTAL HOURS (DECIMAL)", BD + "text-align:right;" + B, 'colspan="2"') +
+                        td((total / 60).toFixed(2), BD + GREEN + C + B + "mso-number-format:'0.00';") +
+                        td("&nbsp;", "", 'colspan="2"') + "</tr>";
+                    html += "<tr>" + td("I certify that I have worked the hours claimed above:", "padding-top:10px;", 'colspan="11"') + "</tr>";
+                    html += "<tr>" +
+                        td("Signed:", B) + td(esc(sig), "font-style:italic;", 'colspan="4"') +
+                        td("Date:", B) + td(esc(claimDate), C, 'colspan="5"') + "</tr>";
+                    html += "</table><br><br>";
+                });
+
+                html += "</body></html>";
+
+                const names = Array.from(new Set(matches.map(function (c) { return String(c.invigilatorName || "").trim(); })));
+                const month = document.getElementById("personMonthFilter").value;
+                const fileName =
+                    (names.length === 1 ? names[0].replace(/\s+/g, "_") : "Time_Sheets") +
+                    (month ? "_" + month : "") +
+                    "_TimeSheet.xls";
+
+                const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8;" });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        </script>
+    </body>
+</html>
