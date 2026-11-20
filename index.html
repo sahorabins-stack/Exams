@@ -1,8 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="en-GB">
 <head>
   <base target="_top">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invigilator Time Sheet</title>
   <style>
     :root {
       --navy: #0D2D6C;
@@ -304,6 +306,9 @@
     </div>
   </div>
 
+  <!-- Replaces google.script.run with fetch calls to the Apps Script web app -->
+  <script src="api.js"></script>
+
   <script>
     let scheduleData = [];
     let currentRole = 'Supporting Invigilator';
@@ -575,6 +580,7 @@
       }
       recalculateAll();
     }
+
     function saveLocalDraft() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(collectPayload()));
