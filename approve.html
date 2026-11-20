@@ -1083,6 +1083,7 @@
                                 Export Filtered CSV
                             </button>
                         </div>
+                        
                     </div>
 
                     <div class="table-wrap">
@@ -1117,6 +1118,8 @@
                         <select id="personMonthFilter" onchange="onPersonNameChange()">
                             <option value="">All Months</option>
                         </select>
+                        <button type="button" class="export-btn" onclick="exportPersonCSV()">Export Official Time Sheet</button>
+
                     </div>
                     <div id="personSheetContainer"></div>
                 </div>
@@ -2375,7 +2378,156 @@
                         btn.textContent = "Remove";
                     })
                     .removeInvigilator(savedPasscode, name);
-            }
+            } 
+                function exportPersonCSV() {
+      const nameQuery = document.getElementById('personNameInput').value.trim().toLowerCase();
+      const statusMode = document.getElementById('personStatusFilter').value;
+      if (!nameQuery) {
+        alert('Please enter or select an invigilator name first.');
+        return;
+      }
+
+      const matches = allClaims.filter(function(c) {
+        const nameMatch = String(c.invigilatorName || '').toLowerCase().includes(nameQuery);
+        const isApp = String(c.status || '').trim().toLowerCase().startsWith('approved');
+        const statusMatch = !statusMode || isApp;
+        return nameMatch && statusMatch;
+      });
+
+      if (matches.length === 0) {
+        alert('No matching records to export for that name.');
+        return;
+      }
+
+      const invName = matches.at(0).invigilatorName;
+      const rawPeriod = String(matches.at(0).examPeriod || 'PPE');
+      const isLead = rawPeriod.toLowerCase().includes('[lead]');
+      const cleanPeriod = rawPeriod.replace(/^\[(Lead|Supporting)\]\s*/i, '');
+      const titleHeader = 'UPTON-BY-CHESTER HIGH SCHOOL - ' + (isLead ? 'LEAD INVIGILATOR TIME SHEET' : 'SUPPORTING INVIGILATOR TIME SHEET');
+
+      const weeksMap = {};
+      let grandTotalMins = 0;
+
+      matches.forEach(function(c) {
+        const wk = String(c.weekCommencing || '').trim();
+        if (!weeksMap[wk]) weeksMap[wk] = new Array();
+        weeksMap[wk].push(c);
+      });
+
+      const sage = '#A9C79B';
+      const grey = '#E5E7EB';
+      const bdr = '1px solid #000000';
+
+      let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://w3.org">';
+      html += '<head><meta charset="utf-8"><style>body{font-family:Arial,sans-serif;padding:16px;} table{border-collapse:collapse;font-size:10pt;} td,th{padding:4px 6px;} @media print{.no-print{display:none;}}<' + '/style><' + '/head><body>';
+      html += '<div class="no-print" style="margin-bottom:12px;padding:10px;background:#F4F7FB;border:1px solid #0D2D6C;border-radius:6px;">';
+      html += '<button onclick="window.print()" style="padding:8px 14px;background:#0D2D6C;color:#fff;border:none;border-radius:4px;font-weight:bold;cursor:pointer;">Print / Save as PDF</button>';
+      html += ' <span style="font-size:12px;color:#475569;margin-left:8px;">Or select all (Ctrl+A) and paste directly into Excel / Google Sheets.</span>';
+      html += '</div>';
+      html += '<table>';
+      html += '<tr><td colspan="11" style="font-weight:bold;font-size:11pt;">' + titleHeader + '</td></tr>';
+      html += '<tr><td colspan="11" style="font-weight:bold;font-size:11pt;">' + cleanPeriod + '</td></tr>';
+      html += '<tr><td colspan="11"></td></tr>';
+      html += '<tr><td style="font-weight:bold;">NAME</td><td colspan="3" style="font-weight:bold;border-bottom:' + bdr + ';">' + invName + '</td><td colspan="7"></td></tr>';
+      html += '<tr><td colspan="11"></td></tr>';
+
+      const defaultDays = new Array('MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY');
+
+      Object.entries(weeksMap).forEach(function(entry) {
+        const wkCom = entry.at(0);
+        const rows = entry.at(1);
+
+        html += '<tr>';
+        html += '<th style="border:' + bdr + ';text-align:left;width:130px;">EXAM SESSIONS</th>';
+        html += '<th style="border:' + bdr + ';text-align:center;width:95px;">AM START<br>INC SET UP</th>';
+        html += '<th style="border:' + bdr + ';text-align:center;width:115px;">AM FINISH<br>INC PACK UP/SET UP</th>';
+        html += '<th style="border:' + bdr + ';text-align:center;width:95px;">SESSIONS WORKED</th>';
+        html += '<th style="border:' + bdr + ';text-align:center;width:95px;">PM START<br>INC SET UP</th>';
+        html += '<th style="border:' + bdr + ';text-align:center;width:115px;">PM FINISH<br>INC PACK UP/SET UP</th>';
+        html += '<th style="border:' + bdr + ';text-align:center;width:95px;">SESSIONS WORKED</th>';
+        html += '<th colspan="4" style="border:' + bdr + ';text-align:center;">ADDITIONAL HOURS AGREED WITH EXAM TEAM DUE TO ET / RB</th>';
+        html += '</tr>';
+
+        html += '<tr>';
+        html += '<td style="border:' + bdr + ';font-weight:bold;">WEEK COM ' + wkCom + '</td>';
+        html += '<td colspan="6" style="border:' + bdr + ';background:' + sage + ';"></td>';
+        html += '<td style="border:' + bdr + ';font-weight:bold;text-align:center;width:75px;">AM</td>';
+        html += '<td style="border:' + bdr + ';background:' + sage + ';width:35px;"></td>';
+        html += '<td style="border:' + bdr + ';font-weight:bold;text-align:center;width:75px;">PM</td>';
+        html += '<td style="border:' + bdr + ';background:' + sage + ';width:35px;"></td>';
+        html += '</tr>';
+
+        defaultDays.forEach(function(dayName) {
+          const match = rows.find(function(r) { return String(r.day || '').trim().toUpperCase() === dayName; });
+          const amWorked = match && match.amWorked === 'Yes';
+          const pmWorked = match && match.pmWorked === 'Yes';
+          const amM = match ? (amWorked ? sessionMins(match.amStart, match.amFinish, match.amExtra) : Number(match.amExtra || 0)) : 0;
+          const pmM = match ? (pmWorked ? sessionMins(match.pmStart, match.pmFinish, match.pmExtra) : Number(match.pmExtra || 0)) : 0;
+          grandTotalMins += (amM + pmM);
+
+          html += '<tr>';
+          html += '<td style="border:' + bdr + ';background:' + grey + ';font-weight:bold;">' + dayName + '</td>';
+          html += '<td style="border:' + bdr + ';text-align:center;">' + (amWorked ? match.amStart : '') + '</td>';
+          html += '<td style="border:' + bdr + ';text-align:center;">' + (amWorked ? match.amFinish : '') + '</td>';
+          html += '<td style="border:' + bdr + ';text-align:center;font-size:12pt;">' + (amWorked ? '&#9745;' : '&#9744;') + '</td>';
+          html += '<td style="border:' + bdr + ';text-align:center;">' + (pmWorked ? match.pmStart : '') + '</td>';
+          html += '<td style="border:' + bdr + ';text-align:center;">' + (pmWorked ? match.pmFinish : '') + '</td>';
+          html += '<td style="border:' + bdr + ';text-align:center;font-size:12pt;">' + (pmWorked ? '&#9745;' : '&#9744;') + '</td>';
+          html += '<td style="border:' + bdr + ';text-align:center;">' + (amM > 0 ? formatMins(amM) + ':00' : '') + '</td>';
+          html += '<td style="border:' + bdr + ';background:' + sage + ';"></td>';
+          html += '<td style="border:' + bdr + ';text-align:center;">' + (pmM > 0 ? formatMins(pmM) + ':00' : '') + '</td>';
+          html += '<td style="border:' + bdr + ';background:' + sage + ';"></td>';
+          html += '</tr>';
+        });
+
+        html += '<tr><td colspan="11" style="border:' + bdr + ';background:' + sage + ';height:14px;"></td></tr>';
+      });
+
+      const latest = matches.at(-1);
+      const sigName = latest.signatureText || latest.certifiedName || invName;
+      const claimDt = latest.claimDate || '';
+      const authRaw = String(latest.status || '');
+      const isAuth = authRaw.toLowerCase().startsWith('approved');
+      const authBy = isAuth ? authRaw.replace(/^Approved by\s*/i, '').replace(/\s*\(.*\)$/, '') : '';
+      const authDateMatch = authRaw.match(/\(([^)]+)\)/);
+      const authDt = authDateMatch ? authDateMatch.at(1) : '';
+
+      html += '<tr>';
+      html += '<td colspan="7"></td>';
+      html += '<td colspan="2" style="border:' + bdr + ';font-weight:bold;text-align:right;">TOTAL HOURS CLAIMED</td>';
+      html += '<td colspan="2" style="border:' + bdr + ';background:' + sage + ';font-weight:bold;text-align:center;">' + formatMins(grandTotalMins) + ':00</td>';
+      html += '</tr>';
+
+      html += '<tr><td colspan="11" style="font-weight:bold;padding-top:10px;">I certify that I have worked the hours claimed above:</td></tr>';
+      html += '<tr><td style="border:' + bdr + ';font-weight:bold;">Name</td><td colspan="2" style="border:' + bdr + ';">' + invName + '</td><td colspan="8"></td></tr>';
+      html += '<tr><td style="border:' + bdr + ';font-weight:bold;">Signed</td><td colspan="2" style="border:' + bdr + ';font-style:italic;">' + sigName + '</td><td colspan="8"></td></tr>';
+      html += '<tr><td style="border:' + bdr + ';font-weight:bold;">Date</td><td colspan="2" style="border:' + bdr + ';">' + claimDt + '</td><td colspan="8"></td></tr>';
+
+      html += '<tr><td colspan="11" style="font-weight:bold;padding-top:14px;">AUTHORISED BY EXAMINATIONS MANAGER</td></tr>';
+      html += '<tr><td style="border:' + bdr + ';font-weight:bold;">NAME</td><td colspan="2" style="border:' + bdr + ';">' + authBy + '</td><td colspan="8"></td></tr>';
+      html += '<tr><td style="border:' + bdr + ';font-weight:bold;">SIGNED</td><td colspan="2" style="border:' + bdr + ';font-style:italic;">' + authBy + '</td><td colspan="8"></td></tr>';
+      html += '<tr><td style="border:' + bdr + ';font-weight:bold;">DATE</td><td colspan="2" style="border:' + bdr + ';">' + authDt + '</td><td colspan="8"></td></tr>';
+      html += '</table><' + '/body><' + '/html>';
+
+      // 1. Trigger direct download attached to DOM
+      const dataUri = 'data:application/vnd.ms-excel;charset=utf-8,' + encodeURIComponent(html);
+      const link = document.createElement('a');
+      link.href = dataUri;
+      link.download = invName.replace(/\s+/g, '_') + '_Time_Sheet.xls';
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // 2. Also open print/copy window in case Google Sites blocks iframe file downloads
+      const win = window.open('', '_blank');
+      if (win) {
+        win.document.open();
+        win.document.write(html);
+        win.document.close();
+      }
+    }
+
         </script>
     </body>
 </html>
