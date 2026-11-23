@@ -1,7 +1,7 @@
 // Recreates google.script.run so the existing page code works unchanged on GitHub Pages.
 (function () {
   // Paste your Apps Script Web App URL here (it ends in /exec).
-  var API_URL = 'https://script.google.com/macros/s/AKfycbwYga_XiVy9mKhPBVkGrEIY0pLcfosKNvhRmxHG6VzPdt7GIEpWR3OFDSFZbikw4qzZKA/exec';
+  var API_URL = 'https://script.google.com/macros/s/AKfycbwOrMEX19gFv0YkVnKnimA9lV3B4iFuy9hIFgaS7eCvxyLTD4LAFzzGmktGe7qsbqo-DA/exec';
 
   function call(fn, args) {
     return fetch(API_URL, {
