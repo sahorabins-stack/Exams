@@ -1,0 +1,1153 @@
+<!doctype html>
+<html lang="en-GB">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="./css/approve.css"</link>
+        <title>Invigilator Claim Authorisation</title>
+    </head>
+    <body>
+            <!-- PORTAL NAVIGATION BAR -->
+            <div class="portal-nav-strip">
+                   <img
+                    src="./img/UBC Logo.png"
+                    alt="School Crest"
+                    class="school-logo"
+                    onerror="this.style.display='none'"/>
+                <div class="portal-nav-links">
+                    <a href="./index.html" class="portal-nav-btn"> TimeSheet</a>
+                    <a href="./approve.html" class="portal-nav-btn active">Head of Exams Authorisation</a>
+                </div>
+            </div>
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <div class="school-tag">Upton-by-Chester High School</div>
+                    <h2>Invigilator Claim Authorisation</h2>
+                    <p>Authorise pending claims, inspect time sheets, or add new exam schedules.</p>
+                </div>
+            </div>
+
+            <!-- LOCK SCREEN -->
+            <div id="lockScreen" class="lock-box">
+                <h3>Head of Exams Sign-In</h3>
+                <p>Enter your name and authorisation passcode to view and approve invigilator claims.</p>
+                <input
+                    type="text"
+                    id="managerName"
+                    placeholder="Your Full Name (e.g. Head of Exams)"
+                    onkeydown="if(event.key==='Enter') document.getElementById('passcodeInput').focus()"
+                />
+                <input
+                    type="password"
+                    id="passcodeInput"
+                    placeholder="Enter Exams Passcode"
+                    onkeydown="if(event.key==='Enter') unlockPortal()"
+                />
+                <button class="primary-btn" id="unlockBtn" onclick="unlockPortal()">Unlock Approval Portal</button>
+                <div class="err-msg" id="loginErr"></div>
+            </div>
+
+            <!-- WELCOME SPLASH -->
+            <div id="welcomeSplash" class="welcome-splash">
+                <div class="welcome-badge">✓</div>
+                <h2 class="welcome-title" id="splashTitle">Welcome, Head of Exams</h2>
+                <p class="welcome-sub">Authorisation verified. Loading invigilator time sheet claims...</p>
+                <div class="progress-track"><div class="progress-fill"></div></div>
+            </div>
+
+            <!-- PORTAL BODY -->
+            <div id="portalBody" class="portal-body">
+                <div class="top-nav-bar">
+                    <span class="welcome-label" id="welcomeText">Welcome, Head of Exams</span>
+                    <div class="mode-switch">
+                        <button type="button" class="tab-btn active" id="tabApprovalsBtn" onclick="switchView('approvals')">
+                            Pending &amp; All Claims
+                        </button>
+                        <button type="button" class="tab-btn" id="tabPersonBtn" onclick="switchView('person')">
+                            View Individual Time Sheet
+                        </button>
+                        <button type="button" class="tab-btn" id="tabScheduleBtn" onclick="switchView('schedule')">
+                            Manage Exam Schedules
+                        </button>
+                        <button type="button" class="tab-btn" id="tabPeopleBtn" onclick="switchView('people')">
+                            Manage Invigilators
+                        </button>
+                        <button type="button" class="tab-btn" id="refreshBtn" onclick="refreshPortalData()">
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TAB 1: APPROVALS VIEW -->
+                <div id="approvalsView">
+                    <div class="cards">
+                        <div class="kpi-card">
+                            <div class="kpi-title">Total Logged Days</div>
+                            <div class="kpi-value" id="totalEntries">0</div>
+                        </div>
+                        <div class="kpi-card accent">
+                            <div class="kpi-title">Pending Authorisation</div>
+                            <div class="kpi-value" id="pendingCount">0</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-title">Approved Days</div>
+                            <div class="kpi-value" id="approvedCount">0</div>
+                        </div>
+                        <div class="kpi-card accent">
+                            <div class="kpi-title">Filtered Hours</div>
+                            <div class="kpi-value" id="filteredHours">0:00</div>
+                        </div>
+                    </div>
+
+                    <div class="toolbar">
+                        <div class="filters">
+                            <select id="statusFilter" onchange="renderTable()">
+                                <option value="Pending">Pending Only</option>
+                                <option value="">All Claims</option>
+                                <option value="Approved">Approved Only</option>
+                            </select>
+                            <input
+                                type="text"
+                                id="searchBox"
+                                placeholder="Search invigilator, exam period, or week..."
+                                oninput="renderTable()"
+                            />
+                        </div>
+                        <div class="actions">
+                            <button type="button" class="bulk-btn" id="bulkApproveBtn" onclick="approveAllFiltered()">
+                                Approve All Filtered Pending
+                            </button>
+                            <button type="button" class="export-btn" onclick="exportFilteredCSV()">
+                                Export Filtered CSV
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Invigilator</th>
+                                    <th>Exam Period &amp; Week</th>
+                                    <th>Days</th>
+                                    <th>Total Hours</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 2: INDIVIDUAL TIME SHEET VIEW -->
+                <div id="personView" style="display: none;">
+                    <div class="person-search-bar">
+                        <label for="personSearchInput" style="font-weight: 700; color: var(--navy);">Invigilator:</label>
+                        <input
+                            type="text"
+                            id="personSearchInput"
+                            list="invigilatorList"
+                            placeholder="Type or select an invigilator name..."
+                            oninput="onPersonNameChange()"
+                        />
+                        <datalist id="invigilatorList"></datalist>
+                        <select id="personMonthFilter" onchange="onPersonNameChange()">
+                            <option value="">All Months</option>
+                        </select>
+                        <button
+    type="button"
+    class="export-btn"
+    onclick="exportIndividualTimesheet()">
+    Export Timesheet
+</button>
+                    </div>
+                    <div id="personSheetContainer"></div>
+                </div>
+
+                <!-- TAB 3: EXAM SCHEDULE BUILDER -->
+                <div id="scheduleView" style="display: none;">
+                    <div class="section-box">
+                        <h3>Add New Exam Week Schedule</h3>
+                        <div class="form-grid">
+                            <div>
+                                <label for="schedRoleInput">Role</label>
+                                <select id="schedRoleInput">
+                                    <option value="Supporting Invigilator">Supporting Invigilator</option>
+                                    <option value="Lead Invigilator">Lead Invigilator</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="schedPeriodInput">Exam Period</label>
+                                <input
+                                    type="text"
+                                    id="schedPeriodInput"
+                                    list="periodOptionsList"
+                                    placeholder="e.g. Summer Exams 2026"
+                                />
+                                <datalist id="periodOptionsList"></datalist>
+                            </div>
+                            <div>
+                                <label for="schedWeekInput">Week Commencing (Monday)</label>
+                                <input type="date" id="schedWeekInput" />
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 10px; text-align: right;">
+                            <button type="button" class="edit-btn" onclick="copyMondayTimes()">
+                                Copy Monday Times to Tue–Fri
+                            </button>
+                        </div>
+
+                        <div class="table-wrap" style="margin-bottom: 14px; background: #fff;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Day</th>
+                                        <th>AM Start</th>
+                                        <th>AM Finish</th>
+                                        <th>PM Start</th>
+                                        <th>PM Finish</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="schedBuilderBody">
+                                    <tr data-day="MONDAY">
+                                        <td><strong>MONDAY</strong></td>
+                                        <td><input type="text" class="sb-input sb-am-s" placeholder="08:15" /></td>
+                                        <td><input type="text" class="sb-input sb-am-f" placeholder="11:30" /></td>
+                                        <td><input type="text" class="sb-input sb-pm-s" placeholder="12:45" /></td>
+                                        <td><input type="text" class="sb-input sb-pm-f" placeholder="15:30" /></td>
+                                    </tr>
+                                    <tr data-day="TUESDAY">
+                                        <td><strong>TUESDAY</strong></td>
+                                        <td><input type="text" class="sb-input sb-am-s" placeholder="08:15" /></td>
+                                        <td><input type="text" class="sb-input sb-am-f" placeholder="11:30" /></td>
+                                        <td><input type="text" class="sb-input sb-pm-s" placeholder="12:45" /></td>
+                                        <td><input type="text" class="sb-input sb-pm-f" placeholder="15:30" /></td>
+                                    </tr>
+                                    <tr data-day="WEDNESDAY">
+                                        <td><strong>WEDNESDAY</strong></td>
+                                        <td><input type="text" class="sb-input sb-am-s" placeholder="08:15" /></td>
+                                        <td><input type="text" class="sb-input sb-am-f" placeholder="11:30" /></td>
+                                        <td><input type="text" class="sb-input sb-pm-s" placeholder="12:45" /></td>
+                                        <td><input type="text" class="sb-input sb-pm-f" placeholder="15:30" /></td>
+                                    </tr>
+                                    <tr data-day="THURSDAY">
+                                        <td><strong>THURSDAY</strong></td>
+                                        <td><input type="text" class="sb-input sb-am-s" placeholder="08:15" /></td>
+                                        <td><input type="text" class="sb-input sb-am-f" placeholder="11:30" /></td>
+                                        <td><input type="text" class="sb-input sb-pm-s" placeholder="12:45" /></td>
+                                        <td><input type="text" class="sb-input sb-pm-f" placeholder="15:30" /></td>
+                                    </tr>
+                                    <tr data-day="FRIDAY">
+                                        <td><strong>FRIDAY</strong></td>
+                                        <td><input type="text" class="sb-input sb-am-s" placeholder="08:15" /></td>
+                                        <td><input type="text" class="sb-input sb-am-f" placeholder="11:30" /></td>
+                                        <td><input type="text" class="sb-input sb-pm-s" placeholder="12:45" /></td>
+                                        <td><input type="text" class="sb-input sb-pm-f" placeholder="15:30" /></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <button type="button" class="primary-btn" id="saveSchedBtn" onclick="submitNewSchedule()">
+                            Save Exam Schedule to Form
+                        </button>
+                        <div id="schedStatusMsg" style="margin-top: 10px; font-weight: 700; font-size: 13.5px;"></div>
+                    </div>
+
+                    <div class="section-box">
+                        <h3>Existing Schedules</h3>
+                        <div id="existingSchedulesList"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: INVIGILATOR LIST MANAGER -->
+                <div id="peopleView" style="display: none;">
+                    <div class="section-box">
+                        <h3>Add Invigilator to Claim Form Drop-Down</h3>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                            <input
+                                type="text"
+                                id="newPersonName"
+                                placeholder="Full Name (e.g. Jane Doe)"
+                                style="flex: 1; min-width: 220px; background: #fff;"
+                                onkeydown="if(event.key==='Enter') addPerson()"
+                            />
+                            <button type="button" class="export-btn" id="addPersonBtn" onclick="addPerson()">
+                                Add Person
+                            </button>
+                        </div>
+                        <div id="peopleStatusMsg" style="margin-top: 10px; font-weight: 700; font-size: 13.5px;"></div>
+                    </div>
+
+                    <div class="section-box">
+                        <h3 id="peopleHeading">Invigilators on the Form</h3>
+                        <div id="peopleList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- EDIT CLAIM MODAL -->
+        <div id="editModal" class="modal-backdrop">
+            <div class="modal-box">
+                <h3>Edit Claim Hours</h3>
+                <div class="modal-who" id="editModalWho"></div>
+                <div class="edit-note" id="editApprovedNote">
+                    This claim is already approved. Saving changes will also update the invigilator's individual Google Sheet tab.
+                </div>
+
+                <div class="edit-session">
+                    <label class="check">
+                        <input type="checkbox" id="editAmWorked" onchange="recalcEditTotal()" />
+                        AM Session Worked
+                    </label>
+                    <div class="edit-row">
+                        <div>
+                            <label>AM Start</label>
+                            <input type="text" id="editAmStart" placeholder="08:15" oninput="recalcEditTotal()" />
+                        </div>
+                        <div>
+                            <label>AM Finish</label>
+                            <input type="text" id="editAmFinish" placeholder="11:30" oninput="recalcEditTotal()" />
+                        </div>
+                        <div>
+                            <label>AM ET/RB (mins)</label>
+                            <input type="number" id="editAmExtra" min="0" value="0" oninput="recalcEditTotal()" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="edit-session">
+                    <label class="check">
+                        <input type="checkbox" id="editPmWorked" onchange="recalcEditTotal()" />
+                        PM Session Worked
+                    </label>
+                    <div class="edit-row">
+                        <div>
+                            <label>PM Start</label>
+                            <input type="text" id="editPmStart" placeholder="12:45" oninput="recalcEditTotal()" />
+                        </div>
+                        <div>
+                            <label>PM Finish</label>
+                            <input type="text" id="editPmFinish" placeholder="15:30" oninput="recalcEditTotal()" />
+                        </div>
+                        <div>
+                            <label>PM ET/RB (mins)</label>
+                            <input type="number" id="editPmExtra" min="0" value="0" oninput="recalcEditTotal()" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="edit-total" id="editTotalPreview">New Daily Total: 0:00</div>
+                <div class="edit-err" id="editErr"></div>
+
+                <div class="modal-actions">
+                    <button type="button" class="cancel-btn" onclick="closeEditModal()">Cancel</button>
+                    <button type="button" class="primary-btn" id="saveEditBtn" onclick="saveEdit()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Load api.js FIRST (must be in same folder as approve.html on GitHub Pages) -->
+        <script src="./api.js"></script>
+
+        <script>
+            let savedPasscode = "";
+     let managerFullName = "";
+     let allClaims = [];
+     let currentFiltered = [];
+     let allSchedules = [];
+     let editingRowNumber = null;
+     const DAY_INDEX = {
+         MONDAY: 0,
+         TUESDAY: 1,
+         WEDNESDAY: 2,
+         THURSDAY: 3,
+         FRIDAY: 4,
+         SATURDAY: 5,
+         SUNDAY: 6
+     };
+     /* ---------- helpers ---------- */
+     function esc(s) {
+         return String(s == null ? "" : s).replace(/[&<>"']/g, function(m) {
+             return {
+                 "&": "&amp;",
+                 "<": "&lt;",
+                 ">": "&gt;",
+                 '"': "&quot;",
+                 "'": "&#39;"
+             } [m];
+         });
+     }
+
+     function isApprovedStatus(status) {
+         return String(status || "").trim().toLowerCase().startsWith("approved");
+     }
+
+     function isPendingStatus(status) {
+         return String(status || "").trim().toLowerCase() === "pending";
+     }
+
+     function extraMinsOf(c) {
+         return Number(c.amExtra || 0) + Number(c.pmExtra || 0);
+     }
+
+     function parseHoursToMins(str) {
+         const parts = String(str || "0:00").split(":");
+         if (parts.length !== 2) return 0;
+         return (parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0);
+     }
+
+     function sessionMins(startStr, finishStr, extraMins) {
+         let total = Number(extraMins) || 0;
+         if (startStr && finishStr) {
+             const s = parseHoursToMins(String(startStr).replace(".", ":"));
+             const f = parseHoursToMins(String(finishStr).replace(".", ":"));
+             if (f > s) total += f - s;
+         }
+         return total;
+     }
+
+     function formatMins(mins) {
+         const h = Math.floor(mins / 60);
+         const m = mins % 60;
+         return h + ":" + (m < 10 ? "0" : "") + m;
+     }
+
+     function normaliseWeek(w) {
+         const raw = String(w == null ? "" : w).trim();
+         const m = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2}|\d{4})$/.exec(raw);
+         if (!m) return raw;
+         return m[1].padStart(2, "0") + "/" + m[2].padStart(2, "0") + "/" + m[3].slice(-2);
+     }
+
+     function claimDayDate(c) {
+         const wk = normaliseWeek(c.weekCommencing);
+         const m = /^(\d{2})\/(\d{2})\/(\d{2})$/.exec(wk);
+         if (!m) return null;
+         const d = new Date(2000 + parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10));
+         const off = DAY_INDEX[String(c.day || "").trim().toUpperCase()];
+         if (off) d.setDate(d.getDate() + off);
+         return isNaN(d.getTime()) ? null : d;
+     }
+
+     function monthKey(d) {
+         return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+     }
+
+     function monthLabel(key) {
+         const p = key.split("-");
+         return new Date(+p[0], +p[1] - 1, 1).toLocaleDateString("en-GB", {
+             month: "long",
+             year: "numeric"
+         });
+     }
+     /* ---------- sign-in ---------- */
+     function unlockPortal() {
+         const nameVal = document.getElementById("managerName").value.trim();
+         const passVal = document.getElementById("passcodeInput").value.trim();
+         const errEl = document.getElementById("loginErr");
+         const btn = document.getElementById("unlockBtn");
+         if (!nameVal || !passVal) {
+             errEl.textContent = "Please enter both your name and the passcode.";
+             errEl.style.display = "block";
+             return;
+         }
+         btn.disabled = true;
+         btn.textContent = "Verifying...";
+         errEl.style.display = "none";
+         google.script.run.withSuccessHandler(function(data) {
+             savedPasscode = passVal;
+             managerFullName = nameVal;
+             allClaims = data || [];
+             document.getElementById("splashTitle").textContent = "Welcome, " + managerFullName;
+             document.getElementById("welcomeText").textContent = "Welcome, " + managerFullName;
+             document.getElementById("lockScreen").style.display = "none";
+             document.getElementById("welcomeSplash").style.display = "block";
+             populateNameDatalist();
+             updateSummary();
+             renderTable();
+             setTimeout(function() {
+                 document.getElementById("welcomeSplash").style.display = "none";
+                 document.getElementById("portalBody").style.display = "block";
+             }, 1700);
+         }).withFailureHandler(function(err) {
+             btn.disabled = false;
+             btn.textContent = "Unlock Approval Portal";
+             errEl.textContent = err.message;
+             errEl.style.display = "block";
+         }).verifyExamsAccess(passVal);
+     }
+
+     function refreshPortalData() {
+         const btn = document.getElementById("refreshBtn");
+         btn.disabled = true;
+         btn.textContent = "Refreshing...";
+         google.script.run.withSuccessHandler(function(data) {
+             allClaims = data || [];
+             populateNameDatalist();
+             updateSummary();
+             renderTable();
+             onPersonNameChange();
+             btn.disabled = false;
+             btn.textContent = "Refresh";
+         }).withFailureHandler(function(err) {
+             alert("Error: " + err.message);
+             btn.disabled = false;
+             btn.textContent = "Refresh";
+         }).verifyExamsAccess(savedPasscode);
+     }
+     /* ---------- tabs ---------- */
+     function switchView(viewName) {
+         document.getElementById("approvalsView").style.display = viewName === "approvals" ? "block" : "none";
+         document.getElementById("personView").style.display = viewName === "person" ? "block" : "none";
+         document.getElementById("scheduleView").style.display = viewName === "schedule" ? "block" : "none";
+         document.getElementById("peopleView").style.display = viewName === "people" ? "block" : "none";
+         document.getElementById("tabApprovalsBtn").className = viewName === "approvals" ? "tab-btn active" : "tab-btn";
+         document.getElementById("tabPersonBtn").className = viewName === "person" ? "tab-btn active" : "tab-btn";
+         document.getElementById("tabScheduleBtn").className = viewName === "schedule" ? "tab-btn active" : "tab-btn";
+         document.getElementById("tabPeopleBtn").className = viewName === "people" ? "tab-btn active" : "tab-btn";
+         if (viewName === "person") onPersonNameChange();
+         if (viewName === "people") loadPeople();
+         if (viewName === "schedule") {
+             google.script.run.withSuccessHandler(function(sched) {
+                 allSchedules = sched || [];
+                 renderExistingSchedules();
+             }).getExamSchedule();
+         }
+     }
+     /* ---------- approvals view ---------- */
+     function populateNameDatalist() {
+         const names = Array.from(new Set(allClaims.map(function(c) {
+             return c.invigilatorName;
+         }).filter(Boolean))).sort();
+         const dl = document.getElementById("invigilatorList");
+         dl.innerHTML = "";
+         names.forEach(function(n) {
+             const opt = document.createElement("option");
+             opt.value = n;
+             dl.appendChild(opt);
+         });
+     }
+
+     function updateSummary() {
+         document.getElementById("totalEntries").textContent = allClaims.length;
+         document.getElementById("pendingCount").textContent = allClaims.filter(function(c) {
+             return isPendingStatus(c.status);
+         }).length;
+         document.getElementById("approvedCount").textContent = allClaims.filter(function(c) {
+             return isApprovedStatus(c.status);
+         }).length;
+     }
+     let currentGroups = [];
+     const expandedGroups = new Set();
+
+     function toggleGroup(gi) {
+         const g = currentGroups[gi];
+         if (!g) return;
+         if (expandedGroups.has(g.key)) expandedGroups.delete(g.key);
+         else expandedGroups.add(g.key);
+         renderTable();
+     }
+
+     function groupKeyOf(c) {
+         return (String(c.invigilatorName || "").trim().toLowerCase() + "||" + String(c.examPeriod || "").trim().toLowerCase() + "||" + normaliseWeek(c.weekCommencing));
+     }
+
+     function dayOrder(c) {
+         const i = DAY_INDEX[String(c.day || "").trim().toUpperCase()];
+         return i === undefined ? 99 : i;
+     }
+
+     function renderTable() {
+         const statusVal = document.getElementById("statusFilter").value;
+         const query = document.getElementById("searchBox").value.toLowerCase();
+         const tbody = document.getElementById("tableBody");
+         tbody.innerHTML = "";
+         let totalMins = 0;
+         currentFiltered = allClaims.filter(function(c) {
+             const approved = isApprovedStatus(c.status);
+             const matchesStatus = !statusVal || (statusVal === "Approved" ? approved : isPendingStatus(c.status));
+             const matchesSearch = !query || [c.invigilatorName, c.examPeriod, c.weekCommencing, c.day].some(function(v) {
+                 return String(v == null ? "" : v).toLowerCase().includes(query);
+             });
+             return matchesStatus && matchesSearch;
+         });
+         currentFiltered.forEach(function(c) {
+             totalMins += parseHoursToMins(c.dailyTotal);
+         });
+         document.getElementById("filteredHours").textContent = formatMins(totalMins);
+         currentGroups = [];
+         if (currentFiltered.length === 0) {
+             tbody.innerHTML = '<tr><td colspan="6">No matching claims found.</td></tr>';
+             return;
+         }
+         const map = {};
+         currentFiltered.forEach(function(c) {
+             const k = groupKeyOf(c);
+             if (!map[k]) {
+                 map[k] = {
+                     key: k,
+                     name: c.invigilatorName,
+                     period: c.examPeriod,
+                     week: normaliseWeek(c.weekCommencing),
+                     rows: [],
+                 };
+                 currentGroups.push(map[k]);
+             }
+             map[k].rows.push(c);
+         });
+         currentGroups.forEach(function(g, gi) {
+             g.rows.sort(function(a, b) {
+                 return dayOrder(a) - dayOrder(b) || Number(a.rowNumber) - Number(b.rowNumber);
+             });
+             let gMins = 0;
+             let pending = 0;
+             g.rows.forEach(function(c) {
+                 gMins += parseHoursToMins(c.dailyTotal);
+                 if (!isApprovedStatus(c.status)) pending++;
+             });
+             const approvedN = g.rows.length - pending;
+             const open = expandedGroups.has(g.key);
+             let badge;
+             if (pending === 0) badge = '<span class="badge-approved">Approved</span>';
+             else if (approvedN === 0) badge = '<span class="badge-pending">Pending</span>';
+             else badge = '<span class="badge-pending">' + pending + " pending / " + approvedN + " approved</span>";
+             const action = pending > 0 ? '<button type="button" class="approve-btn" onclick="event.stopPropagation(); approveWeek(' + gi + ', this)">Approve Week (' + pending + ")</button>" : '<span style="color:#64748B;font-size:12px;">Authorised</span>';
+             const tr = document.createElement("tr");
+             tr.className = "group-row";
+             tr.title = open ? "Click to hide days" : "Click to show days";
+             tr.onclick = function() {
+                 toggleGroup(gi);
+             };
+             tr.innerHTML = '<td><span class="chev">' + (open ? "&#9660;" : "&#9654;") + '</span><strong class="group-name">' + esc(g.name) + "</strong></td>" + "<td>" + esc(g.period) + " (" + esc(g.week) + ")</td>" + "<td>" + g.rows.length + " day" + (g.rows.length === 1 ? "" : "s") + "</td>" + "<td><strong>" + formatMins(gMins) + "</strong></td>" + "<td>" + badge + "</td>" + "<td>" + action + "</td>";
+             tbody.appendChild(tr);
+             if (!open) return;
+             let dayHtml = "";
+             g.rows.forEach(function(c) {
+                 const approved = isApprovedStatus(c.status);
+                 const badgeClass = approved ? "badge-approved" : "badge-pending";
+                 const sigDisplay = c.signatureText || c.certifiedName || "Signed";
+                 const editBtn = '<button type="button" class="edit-btn" onclick="openEdit(' + Number(c.rowNumber) + ')">Edit</button>' + '<button type="button" class="delete-btn" onclick="deleteClaim(' + Number(c.rowNumber) + ')">Delete</button>';
+                 const actionHtml = approved ? '<span style="color:#64748B;font-size:12px;">Authorised</span> ' + editBtn : '<button class="approve-btn" onclick="approveSingle(' + Number(c.rowNumber) + ', this)">Approve</button> ' + editBtn;
+                 dayHtml += "<tr>" + "<td><strong>" + esc(c.day) + "</strong></td>" + "<td>" + (c.amWorked === "Yes" ? esc(c.amStart) + "-" + esc(c.amFinish) : "-") + "</td>" + "<td>" + (c.pmWorked === "Yes" ? esc(c.pmStart) + "-" + esc(c.pmFinish) : "-") + "</td>" + "<td>" + extraMinsOf(c) + "m</td>" + "<td><strong>" + esc(c.dailyTotal) + "</strong></td>" + '<td><span class="sig-text">' + esc(sigDisplay) + "</span></td>" + '<td><span class="' + badgeClass + '">' + esc(c.status) + "</span></td>" + '<td class="day-actions">' + actionHtml + "</td>" + "</tr>";
+             });
+             const detail = document.createElement("tr");
+             detail.className = "detail-row";
+             detail.innerHTML = '<td colspan="6"><div class="day-wrap"><table class="day-table">' + "<thead><tr><th>Day</th><th>AM</th><th>PM</th><th>ET/RB</th><th>Total</th><th>Signed</th><th>Status</th><th>Action</th></tr></thead>" + "<tbody>" + dayHtml + "</tbody></table></div></td>";
+             tbody.appendChild(detail);
+         });
+     }
+     /* ---------- approve / edit / delete actions ---------- */
+     function runBatchApprove(rowNumbers, btn, labelText) {
+         if (!rowNumbers || rowNumbers.length === 0) return;
+         if (btn) {
+             btn.disabled = true;
+             btn.textContent = "Approving...";
+         }
+         google.script.run.withSuccessHandler(function(updated) {
+             allClaims = updated || [];
+             updateSummary();
+             renderTable();
+             onPersonNameChange();
+         }).withFailureHandler(function(err) {
+             alert("Error: " + err.message);
+             if (btn) {
+                 btn.disabled = false;
+                 btn.textContent = labelText;
+             }
+         }).approveMultipleRows(savedPasscode, rowNumbers, managerFullName);
+     }
+
+     function approveSingle(rowNumber, btn) {
+         runBatchApprove([rowNumber], btn, "Approve");
+     }
+
+     function approveWeek(gi, btn) {
+         const g = currentGroups[gi];
+         if (!g) return;
+         const rows = g.rows.filter(function(c) {
+             return isPendingStatus(c.status);
+         }).map(function(c) {
+             return Number(c.rowNumber);
+         });
+         runBatchApprove(rows, btn, "Approve Week (" + rows.length + ")");
+     }
+
+     function approveAllFiltered() {
+         const rows = currentFiltered.filter(function(c) {
+             return isPendingStatus(c.status);
+         }).map(function(c) {
+             return Number(c.rowNumber);
+         });
+         if (rows.length === 0) {
+             alert("There are no pending rows in the current filter.");
+             return;
+         }
+         if (!confirm("Approve all " + rows.length + " filtered pending day(s)?")) return;
+         const btn = document.getElementById("bulkApproveBtn");
+         runBatchApprove(rows, btn, "Approve All Filtered Pending");
+     }
+
+     function openEdit(rowNumber) {
+         const claim = allClaims.find(function(c) {
+             return Number(c.rowNumber) === Number(rowNumber);
+         });
+         if (!claim) return;
+         editingRowNumber = Number(rowNumber);
+         document.getElementById("editModalWho").textContent = claim.invigilatorName + " — " + claim.day + " (" + normaliseWeek(claim.weekCommencing) + ")";
+         document.getElementById("editApprovedNote").style.display = isApprovedStatus(claim.status) ? "block" : "none";
+         document.getElementById("editAmWorked").checked = claim.amWorked === "Yes";
+         document.getElementById("editAmStart").value = claim.amStart || "";
+         document.getElementById("editAmFinish").value = claim.amFinish || "";
+         document.getElementById("editAmExtra").value = Number(claim.amExtra) || 0;
+         document.getElementById("editPmWorked").checked = claim.pmWorked === "Yes";
+         document.getElementById("editPmStart").value = claim.pmStart || "";
+         document.getElementById("editPmFinish").value = claim.pmFinish || "";
+         document.getElementById("editPmExtra").value = Number(claim.pmExtra) || 0;
+         document.getElementById("editErr").textContent = "";
+         recalcEditTotal();
+         document.getElementById("editModal").style.display = "flex";
+     }
+
+     function closeEditModal() {
+         document.getElementById("editModal").style.display = "none";
+         editingRowNumber = null;
+     }
+
+     function recalcEditTotal() {
+         const amW = document.getElementById("editAmWorked").checked;
+         const amS = document.getElementById("editAmStart").value;
+         const amF = document.getElementById("editAmFinish").value;
+         const amE = document.getElementById("editAmExtra").value;
+         const pmW = document.getElementById("editPmWorked").checked;
+         const pmS = document.getElementById("editPmStart").value;
+         const pmF = document.getElementById("editPmFinish").value;
+         const pmE = document.getElementById("editPmExtra").value;
+         const total = (amW ? sessionMins(amS, amF, amE) : Number(amE) || 0) + (pmW ? sessionMins(pmS, pmF, pmE) : Number(pmE) || 0);
+         document.getElementById("editTotalPreview").textContent = "New Daily Total: " + formatMins(total);
+     }
+
+     function saveEdit() {
+         if (!editingRowNumber) return;
+         const errEl = document.getElementById("editErr");
+         const btn = document.getElementById("saveEditBtn");
+         errEl.textContent = "";
+         const payload = {
+             amWorked: document.getElementById("editAmWorked").checked ? "Yes" : "No",
+             amStart: document.getElementById("editAmStart").value.trim(),
+             amFinish: document.getElementById("editAmFinish").value.trim(),
+             amExtra: Number(document.getElementById("editAmExtra").value) || 0,
+             pmWorked: document.getElementById("editPmWorked").checked ? "Yes" : "No",
+             pmStart: document.getElementById("editPmStart").value.trim(),
+             pmFinish: document.getElementById("editPmFinish").value.trim(),
+             pmExtra: Number(document.getElementById("editPmExtra").value) || 0,
+         };
+         btn.disabled = true;
+         btn.textContent = "Saving...";
+         google.script.run.withSuccessHandler(function(updated) {
+             allClaims = updated || [];
+             btn.disabled = false;
+             btn.textContent = "Save Changes";
+             closeEditModal();
+             updateSummary();
+             renderTable();
+             onPersonNameChange();
+         }).withFailureHandler(function(err) {
+             btn.disabled = false;
+             btn.textContent = "Save Changes";
+             errEl.textContent = err.message;
+         }).updateClaimRow(savedPasscode, editingRowNumber, payload, managerFullName);
+     }
+
+     function deleteClaim(rowNumber) {
+         const claim = allClaims.find(function(c) {
+             return Number(c.rowNumber) === Number(rowNumber);
+         });
+         if (!claim) return;
+         if (!confirm("Delete " + claim.invigilatorName + " — " + claim.day + " (" + normaliseWeek(claim.weekCommencing) + ")?\n\nA backup copy is saved to Deleted_Claims.")) {
+             return;
+         }
+         google.script.run.withSuccessHandler(function(updated) {
+             allClaims = updated || [];
+             updateSummary();
+             renderTable();
+             onPersonNameChange();
+         }).withFailureHandler(function(err) {
+             alert("Error: " + err.message);
+         }).deleteClaimRow(savedPasscode, Number(rowNumber), claim, managerFullName);
+     }
+
+     function exportFilteredCSV() {
+         if (currentFiltered.length === 0) {
+             alert("No rows to export.");
+             return;
+         }
+         const headers = ["Invigilator", "Exam Period", "Week Commencing", "Day", "AM Worked", "AM Start", "AM Finish", "PM Worked", "PM Start", "PM Finish", "AM ET/RB", "PM ET/RB", "Daily Total", "Status", ];
+         const lines = [headers.join(",")];
+         currentFiltered.forEach(function(c) {
+             const row = [
+                 c.invigilatorName,
+                 c.examPeriod,
+                 c.weekCommencing,
+                 c.day,
+                 c.amWorked,
+                 c.amStart,
+                 c.amFinish,
+                 c.pmWorked,
+                 c.pmStart,
+                 c.pmFinish,
+                 c.amExtra,
+                 c.pmExtra,
+                 c.dailyTotal,
+                 c.status,
+             ].map(function(v) {
+                 return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
+             });
+             lines.push(row.join(","));
+         });
+         const blob = new Blob([lines.join("\n")], {
+             type: "text/csv;charset=utf-8;"
+         });
+         const a = document.createElement("a");
+         a.href = URL.createObjectURL(blob);
+         a.download = "Invigilator_Claims_Export.csv";
+         a.click();
+     }
+     /* ---------- individual time sheet view ---------- */
+     function onPersonNameChange() {
+         const nameInput = document.getElementById("personSearchInput").value.trim().toLowerCase();
+         const monthSelect = document.getElementById("personMonthFilter");
+         const selectedMonth = monthSelect.value;
+         const container = document.getElementById("personSheetContainer");
+         container.innerHTML = "";
+         if (!nameInput) {
+             container.innerHTML = '<p style="color:#475569;">Enter or select an invigilator name above.</p>';
+             return;
+         }
+         const personRows = allClaims.filter(function(c) {
+             return String(c.invigilatorName || "").trim().toLowerCase() === nameInput;
+         });
+         if (personRows.length === 0) {
+             container.innerHTML = '<p style="color:#475569;">No claims found for that name.</p>';
+             return;
+         }
+         // Populate month filter
+         const months = new Set();
+         personRows.forEach(function(c) {
+             const d = claimDayDate(c);
+             if (d) months.add(monthKey(d));
+         });
+         const prevMonth = selectedMonth;
+         monthSelect.innerHTML = '<option value="">All Months</option>';
+         Array.from(months).sort().forEach(function(mk) {
+             const opt = document.createElement("option");
+             opt.value = mk;
+             opt.textContent = monthLabel(mk);
+             monthSelect.appendChild(opt);
+         });
+         monthSelect.value = months.has(prevMonth) ? prevMonth : "";
+         const filtered = personRows.filter(function(c) {
+             if (!monthSelect.value) return true;
+             const d = claimDayDate(c);
+             return d && monthKey(d) === monthSelect.value;
+         });
+         const weeks = {};
+         filtered.forEach(function(c) {
+             const wk = normaliseWeek(c.weekCommencing) + " (" + c.examPeriod + ")";
+             if (!weeks[wk]) weeks[wk] = [];
+             weeks[wk].push(c);
+         });
+         let grandMins = 0;
+         Object.entries(weeks).forEach(function(entry) {
+             const wkTitle = entry[0];
+             const rows = entry[1];
+             rows.sort(function(a, b) {
+                 return dayOrder(a) - dayOrder(b);
+             });
+             let wkMins = 0;
+             let rowsHtml = "";
+             rows.forEach(function(c) {
+                 wkMins += parseHoursToMins(c.dailyTotal);
+                 const approved = isApprovedStatus(c.status);
+                 rowsHtml += "<tr>" + "<td><strong>" + esc(c.day) + "</strong></td>" + "<td>" + (c.amWorked === "Yes" ? esc(c.amStart) + " - " + esc(c.amFinish) : "-") + "</td>" + "<td>" + (c.pmWorked === "Yes" ? esc(c.pmStart) + " - " + esc(c.pmFinish) : "-") + "</td>" + "<td>" + extraMinsOf(c) + "m</td>" + "<td><strong>" + esc(c.dailyTotal) + "</strong></td>" + '<td><span class="' + (approved ? "badge-approved" : "badge-pending") + '">' + esc(c.status) + "</span></td>" + "</tr>";
+             });
+             grandMins += wkMins;
+             const block = document.createElement("div");
+             block.className = "week-block";
+             block.innerHTML = '<div class="week-banner"><span>WEEK COM ' + esc(wkTitle) + "</span><span>Week Total: " + formatMins(wkMins) + "</span></div>" + '<div class="table-wrap" style="border:none;border-radius:0;"><table>' + "<thead><tr><th>Day</th><th>AM</th><th>PM</th><th>ET/RB</th><th>Total</th><th>Status</th></tr></thead>" + "<tbody>" + rowsHtml + "</tbody></table></div>";
+             container.appendChild(block);
+         });
+         const footer = document.createElement("div");
+         footer.className = "person-footer";
+         footer.innerHTML = "<strong>" + esc(personRows[0].invigilatorName) + " — Total Hours Shown:</strong>" + '<span style="font-size:20px;font-weight:800;color:var(--forest);">' + formatMins(grandMins) + "</span>";
+         container.appendChild(footer);
+     }
+     /* ---------- schedule builder ---------- */
+     function copyMondayTimes() {
+         const rows = Array.from(document.querySelectorAll("#schedBuilderBody tr"));
+         if (rows.length < 2) return;
+         const mon = rows[0];
+         const amS = mon.querySelector(".sb-am-s").value;
+         const amF = mon.querySelector(".sb-am-f").value;
+         const pmS = mon.querySelector(".sb-pm-s").value;
+         const pmF = mon.querySelector(".sb-pm-f").value;
+         for (let i = 1; i < rows.length; i++) {
+             rows[i].querySelector(".sb-am-s").value = amS;
+             rows[i].querySelector(".sb-am-f").value = amF;
+             rows[i].querySelector(".sb-pm-s").value = pmS;
+             rows[i].querySelector(".sb-pm-f").value = pmF;
+         }
+     }
+
+     function normaliseTime(str) {
+         const t = String(str || "").trim().replace(".", ":");
+         if (!t) return "";
+         const m = /^(\d{1,2}):(\d{2})$/.exec(t);
+         if (!m) return null;
+         const h = parseInt(m[1], 10);
+         const min = parseInt(m[2], 10);
+         if (h > 23 || min > 59) return null;
+         return (h < 10 ? "0" : "") + h + ":" + m[2];
+     }
+
+     function submitNewSchedule() {
+         const role = document.getElementById("schedRoleInput").value;
+         const period = document.getElementById("schedPeriodInput").value.trim();
+         const rawWeek = document.getElementById("schedWeekInput").value.trim();
+         const statusEl = document.getElementById("schedStatusMsg");
+         const btn = document.getElementById("saveSchedBtn");
+
+         function fail(msg) {
+             statusEl.style.color = "#B91C1C";
+             statusEl.textContent = msg;
+         }
+         if (!period) return fail("Please enter an Exam Period.");
+         if (!rawWeek) return fail("Please choose a Week Commencing date.");
+         let week = rawWeek;
+         if (/^\d{4}-\d{2}-\d{2}$/.test(rawWeek)) {
+             const parts = rawWeek.split("-");
+             week = parts[2] + "/" + parts[1] + "/" + parts[0].slice(2);
+         }
+         const days = [];
+         let problem = "";
+         let anyTimes = false;
+         document.querySelectorAll("#schedBuilderBody tr").forEach(function(tr) {
+             const day = tr.dataset.day;
+             const amS = normaliseTime(tr.querySelector(".sb-am-s").value);
+             const amF = normaliseTime(tr.querySelector(".sb-am-f").value);
+             const pmS = normaliseTime(tr.querySelector(".sb-pm-s").value);
+             const pmF = normaliseTime(tr.querySelector(".sb-pm-f").value);
+             if ([amS, amF, pmS, pmF].indexOf(null) !== -1) {
+                 problem = problem || day + ": times must look like 08:00.";
+                 return;
+             }
+             if ((amS && !amF) || (!amS && amF)) problem = problem || day + ": AM needs both a start and finish.";
+             if ((pmS && !pmF) || (!pmS && pmF)) problem = problem || day + ": PM needs both a start and finish.";
+             if (amS && amF && parseHoursToMins(amF) <= parseHoursToMins(amS)) problem = problem || day + ": AM finish must be after AM start.";
+             if (pmS && pmF && parseHoursToMins(pmF) <= parseHoursToMins(pmS)) problem = problem || day + ": PM finish must be after PM start.";
+             if (amS || pmS) anyTimes = true;
+             days.push({
+                 day: day,
+                 amStart: amS,
+                 amFinish: amF,
+                 pmStart: pmS,
+                 pmFinish: pmF
+             });
+         });
+         if (problem) return fail(problem);
+         if (!anyTimes) return fail("Please enter at least one session time.");
+         btn.disabled = true;
+         btn.textContent = "Saving Schedule...";
+         statusEl.textContent = "";
+         google.script.run.withSuccessHandler(function(updatedSched) {
+             allSchedules = updatedSched || [];
+             renderExistingSchedules();
+             statusEl.style.color = "#1B5E20";
+             statusEl.textContent = 'Saved! "' + period + " — Week Com " + week + '" (' + role + ") is now live on the form.";
+             btn.disabled = false;
+             btn.textContent = "Save Exam Schedule to Form";
+         }).withFailureHandler(function(err) {
+             fail("Error: " + err.message);
+             btn.disabled = false;
+             btn.textContent = "Save Exam Schedule to Form";
+         }).saveExamSchedule(savedPasscode, {
+             role: role,
+             period: period,
+             week: week,
+             days: days
+         });
+     }
+
+     function renderExistingSchedules() {
+         const dl = document.getElementById("periodOptionsList");
+         const periods = Array.from(new Set(allSchedules.map(function(s) {
+             return s.period;
+         })));
+         dl.innerHTML = "";
+         periods.forEach(function(p) {
+             const opt = document.createElement("option");
+             opt.value = p;
+             dl.appendChild(opt);
+         });
+         const container = document.getElementById("existingSchedulesList");
+         container.innerHTML = "";
+         const grouped = {};
+         allSchedules.forEach(function(s) {
+             const key = (s.role || "Supporting Invigilator") + "||" + s.period + "||" + s.week + "||" + (s.source || "sheet");
+             if (!grouped[key]) grouped[key] = [];
+             grouped[key].push(s);
+         });
+         const entries = Object.entries(grouped);
+         if (entries.length === 0) {
+             const p = document.createElement("p");
+             p.style.color = "#475569";
+             p.style.fontSize = "13.5px";
+             p.textContent = "No exam schedules found.";
+             container.appendChild(p);
+             return;
+         }
+         entries.forEach(function(entry) {
+             const key = entry[0];
+             const rows = entry[1];
+             const parts = key.split("||");
+             const role = parts[0];
+             const period = parts[1];
+             const week = parts[2];
+             const source = parts[3];
+             const box = document.createElement("div");
+             box.style.cssText = "border:1.5px solid #D0D9E8; border-left:4px solid #0D2D6C; border-radius:8px; padding:12px 14px; margin-bottom:10px; background:#fff; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px;";
+             const info = document.createElement("div");
+             const badge = document.createElement("span");
+             badge.textContent = role;
+             badge.style.cssText = "display:inline-block; background:#0D2D6C; color:#fff; font-size:11px; font-weight:700; padding:2px 7px; border-radius:4px; margin-right:8px;";
+             info.appendChild(badge);
+             const titleSpan = document.createElement("span");
+             titleSpan.style.fontWeight = "700";
+             titleSpan.style.color = "#1E293B";
+             titleSpan.textContent = period + " — Week Com " + week + " (" + rows.length + " day(s))";
+             info.appendChild(titleSpan);
+             box.appendChild(info);
+             if (source === "portal") {
+                 const delBtn = document.createElement("button");
+                 delBtn.type = "button";
+                 delBtn.textContent = "Delete Week";
+                 delBtn.style.cssText = "padding:6px 12px; background:#DC2626; color:#fff; border:none; border-radius:5px; font-size:12px; font-weight:700; cursor:pointer;";
+                 delBtn.onclick = function() {
+                     if (!confirm("Delete " + period + " — Week Com " + week + " (" + role + ")?")) return;
+                     delBtn.disabled = true;
+                     delBtn.textContent = "Deleting...";
+                     google.script.run.withSuccessHandler(function(updated) {
+                         allSchedules = updated || [];
+                         renderExistingSchedules();
+                     }).withFailureHandler(function(err) {
+                         alert("Error: " + err.message);
+                         delBtn.disabled = false;
+                         delBtn.textContent = "Delete Week";
+                     }).deleteExamWeek(savedPasscode, role, period, week);
+                 };
+                 box.appendChild(delBtn);
+             } else {
+                 const tag = document.createElement("span");
+                 tag.textContent = "From Sheet Tab";
+                 tag.style.cssText = "font-size:11.5px; background:#E2E8F0; color:#334155; padding:4px 8px; border-radius:4px; font-weight:600;";
+                 box.appendChild(tag);
+             }
+             container.appendChild(box);
+         });
+     }
+     /* ---------- invigilator list ---------- */
+     let allPeople = [];
+
+     function loadPeople() {
+         google.script.run.withSuccessHandler(function(list) {
+             allPeople = list || [];
+             renderPeople();
+         }).withFailureHandler(function(err) {
+             const el = document.getElementById("peopleStatusMsg");
+             el.style.color = "#B91C1C";
+             el.textContent = "Error: " + err.message;
+         }).getInvigilatorList();
+     }
+
+     function renderPeople() {
+         const box = document.getElementById("peopleList");
+         box.innerHTML = "";
+         document.getElementById("peopleHeading").textContent = "Invigilators on the Form (" + allPeople.length + ")";
+         if (allPeople.length === 0) {
+             const p = document.createElement("p");
+             p.style.color = "#475569";
+             p.style.fontSize = "13.5px";
+             p.textContent = "No invigilators added yet.";
+             box.appendChild(p);
+             return;
+         }
+         allPeople.forEach(function(name) {
+             const row = document.createElement("div");
+             row.style.cssText = "border:1.5px solid #D0D9E8; border-left:4px solid #78BE20; border-radius:8px; padding:10px 14px; margin-bottom:8px; background:#fff; display:flex; justify-content:space-between; align-items:center; gap:10px;";
+             const label = document.createElement("span");
+             label.style.fontWeight = "700";
+             label.style.color = "#1E293B";
+             label.textContent = name;
+             row.appendChild(label);
+             const btn = document.createElement("button");
+             btn.type = "button";
+             btn.className = "delete-btn";
+             btn.textContent = "Remove";
+             btn.onclick = function() {
+                 removePerson(name, btn);
+             };
+             row.appendChild(btn);
+             box.appendChild(row);
+         });
+     }
+
+     function addPerson() {
+         const input = document.getElementById("newPersonName");
+         const statusEl = document.getElementById("peopleStatusMsg");
+         const btn = document.getElementById("addPersonBtn");
+         const name = input.value.replace(/\s+/g, " ").trim();
+         if (name.length < 2) {
+             statusEl.style.color = "#B91C1C";
+             statusEl.textContent = "Please enter the invigilator's full name.";
+             return;
+         }
+         btn.disabled = true;
+         btn.textContent = "Adding...";
+         statusEl.textContent = "";
+         google.script.run.withSuccessHandler(function(list) {
+             allPeople = list || [];
+             renderPeople();
+             input.value = "";
+             statusEl.style.color = "#1B5E20";
+             statusEl.textContent = 'Added! "' + name + '" now appears in the claim form drop-down.';
+             btn.disabled = false;
+             btn.textContent = "Add Person";
+             input.focus();
+         }).withFailureHandler(function(err) {
+             statusEl.style.color = "#B91C1C";
+             statusEl.textContent = "Error: " + err.message;
+             btn.disabled = false;
+             btn.textContent = "Add Person";
+         }).addInvigilator(savedPasscode, name, managerFullName);
+     }
+
+     function removePerson(name, btn) {
+         if (!confirm('Remove "' + name + '" from the claim form drop-down?\n\nTheir existing claims and time sheet are not affected.')) return;
+         btn.disabled = true;
+         btn.textContent = "Removing...";
+         google.script.run.withSuccessHandler(function(list) {
+             allPeople = list || [];
+             renderPeople();
+         }).withFailureHandler(function(err) {
+             alert("Error: " + err.message);
+             btn.disabled = false;
+             btn.textContent = "Remove";
+         }).removeInvigilator(savedPasscode, name);
+     }
+        </script>
+    </body>
+</html>
