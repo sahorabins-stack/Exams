@@ -5,271 +5,29 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Invigilator Time Sheet</title>
-  <style>
-
-    .portal-nav-strip {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-    background: #f4f7fb;
-    border-bottom: 1.5px solid #d0d9e8;
-    padding: 10px 24px;
-}
-.portal-nav-label {
-    font-size: 12.5px;
-    font-weight: 700;
-    color: #475569;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.portal-nav-links {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-.portal-nav-btn {
-    text-decoration: none;
-    padding: 6px 14px;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 700;
-    border: 1.5px solid #0d2d6c;
-    background: #fff;
-    color: #0d2d6c;
-    transition: background 0.15s ease, color 0.15s ease;
-}
-.portal-nav-btn:hover {
-    background: #e2e8f0;
-}
-.portal-nav-btn.active {
-    background: #0d2d6c;
-    color: #fff;
-    border-bottom: 3px solid #78be20;
-}
-@media (max-width: 680px) {
-    .portal-nav-strip {
-        flex-direction: column;
-        align-items: stretch;
-        text-align: center;
-        padding: 10px 14px;
-    }
-    .portal-nav-links {
-        flex-direction: column;
-    }
-    .portal-nav-btn {
-        width: 100%;
-        padding: 10px;
-    }
-  }
-    :root {
-      --navy: #0D2D6C;
-      --lime: #78BE20;
-      --forest: #2E7D32;
-      --bg-tint: #F4F7FB;
-      --border: #D0D9E8;
-      --text-main: #1E293B;
-    }
-    * { box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Roboto, Arial, sans-serif; background: transparent; margin: 0; padding: 12px; color: var(--text-main); }
-    .form-card { max-width: 920px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 4px 16px rgba(13,45,108,0.12); border: 1px solid var(--border); overflow: hidden; }
-    .card-header { background: var(--navy); color: #fff; padding: 18px 24px; border-bottom: 5px solid var(--lime); display: flex; justify-content: space-between; align-items: center; gap: 16px; }
-    .school-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--lime); font-weight: 700; margin-bottom: 4px; }
-    .card-header h2 { margin: 0; font-size: 20px; font-weight: 600; }
-    .card-header p { margin: 4px 0 0; font-size: 13px; color: #D6E2F5; }
-    .school-logo { width: 64px; height: 64px; border-radius: 50%; background: #fff; padding: 2px; border: 2px solid var(--lime); object-fit: contain; flex-shrink: 0; }
-    .form-body { padding: 22px 24px 24px; }
-
-    /* Role Tabs (Supporting vs Lead Invigilator) */
-    .role-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
-    .role-tab {
-      padding: 11px 14px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;
-      border: 1.5px solid var(--navy); background: var(--bg-tint); color: var(--navy); text-align: center;
-      transition: all 0.15s ease;
-    }
-    .role-tab.active {
-      background: var(--navy); color: #fff; border-bottom: 4px solid var(--lime);
-      box-shadow: 0 3px 10px rgba(13, 45, 108, 0.18);
-    }
-
-    .top-grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: 14px; margin-bottom: 18px; }
-    label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px; color: var(--navy); }
-    .name-row { display: flex; gap: 6px; }
-    .name-row select { flex: 1; min-width: 0; }
-    .name-hint { font-size: 11.5px; color: #64748B; margin-top: 4px; }
-    input[type="text"], input[type="date"], input[type="number"], select {
-      width: 100%; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13.5px; background: var(--bg-tint); color: var(--text-main);
-    }
-    input:focus, select:focus { outline: none; border-color: var(--navy); background: #fff; box-shadow: 0 0 0 3px rgba(120,190,32,0.25); }
-    .load-btn { padding: 8px 12px; background: var(--navy); color: #fff; border: none; border-radius: 6px; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
-    .load-btn:hover { background: #1E40AF; }
-    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1.5px solid var(--border); border-radius: 8px; margin-bottom: 18px; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th { background: var(--navy); color: #fff; padding: 10px 8px; text-align: center; font-weight: 600; }
-    th:first-child { text-align: left; padding-left: 14px; }
-    td { padding: 10px 8px; border-bottom: 1px solid var(--border); text-align: center; vertical-align: middle; }
-    td:first-child { text-align: left; padding-left: 14px; font-weight: 700; color: var(--navy); }
-    tr:nth-child(even) td { background: var(--bg-tint); }
-    .time-pill { display: inline-block; padding: 4px 10px; background: #E2E8F0; color: #334155; border-radius: 4px; font-weight: 600; font-size: 12.5px; white-space: nowrap; }
-    .extra-in { width: 68px !important; padding: 5px 6px !important; font-size: 12.5px !important; text-align: center; background: #ECFDF5 !important; border-color: #A7F3D0 !important; }
-    input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--forest); cursor: pointer; }
-    .total-banner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; background: var(--bg-tint); border: 1.5px solid var(--border); border-left: 5px solid var(--lime); padding: 12px 18px; border-radius: 8px; margin-bottom: 20px; }
-    .draft-note { font-size: 12.5px; color: #475569; font-weight: 500; }
-    .total-label { font-size: 13px; font-weight: 700; text-transform: uppercase; color: var(--navy); margin-right: 8px; }
-    .total-value { font-size: 24px; font-weight: 800; color: var(--forest); }
-    .cert-box { background: #F8FAFC; border: 1.5px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 18px; }
-    .cert-title { font-weight: 700; color: var(--navy); font-size: 14px; margin-bottom: 12px; }
-    .cert-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 12px; }
-    .btn-row { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; }
-    .save-btn { padding: 13px; background: var(--navy); color: #fff; border: none; border-bottom: 3px solid #64748B; border-radius: 6px; font-size: 14px; font-weight: 700; cursor: pointer; }
-    .save-btn:hover { background: #1E40AF; }
-    .submit-btn { padding: 13px; background: var(--forest); color: #fff; border: none; border-bottom: 3px solid var(--lime); border-radius: 6px; font-size: 15px; font-weight: 700; cursor: pointer; }
-    .submit-btn:hover { background: #246427; }
-    .submit-btn:disabled, .save-btn:disabled { background: #94A3B8; border-bottom-color: #64748B; cursor: not-allowed; }
-    .status { margin-top: 14px; padding: 12px; border-radius: 6px; font-size: 13.5px; font-weight: 600; text-align: center; display: none; }
-    .status.success { background: #ECFDF5; color: #1B5E20; border: 1px solid var(--lime); }
-    .status.error { background: #FEF2F2; color: #991B1B; border: 1px solid #FCA5A5; }
-
-    /* ===== "Submitted" animation overlay ===== */
-    .submit-overlay {
-      position: fixed; inset: 0; z-index: 9999;
-      background: rgba(13, 45, 108, 0.55);
-      display: none; align-items: center; justify-content: center; padding: 16px;
-    }
-    .submit-overlay.show { display: flex; animation: subFade 0.25s ease-out; }
-    .submit-modal {
-      background: #fff; border-radius: 14px; padding: 32px 28px; text-align: center;
-      max-width: 360px; width: 100%; border-top: 5px solid var(--lime);
-      box-shadow: 0 12px 32px rgba(13, 45, 108, 0.3);
-      animation: subPop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .submit-modal h3 { margin: 0 0 6px; color: var(--navy); font-size: 22px; }
-    .submit-modal p { margin: 0 0 18px; color: #475569; font-size: 14px; line-height: 1.45; }
-    .submit-modal button {
-      padding: 10px 26px; background: var(--navy); color: #fff; border: none;
-      border-bottom: 3px solid var(--lime); border-radius: 6px; font-size: 14px; font-weight: 700; cursor: pointer;
-    }
-    .submit-modal button:hover { background: #1E40AF; }
-    .tick { width: 84px; height: 84px; margin: 0 auto 14px; display: block; }
-    .tick circle {
-      fill: none; stroke: var(--forest); stroke-width: 3;
-      stroke-dasharray: 166; stroke-dashoffset: 166;
-      animation: subDraw 0.6s ease-out 0.1s forwards;
-    }
-    .tick path {
-      fill: none; stroke: var(--forest); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round;
-      stroke-dasharray: 48; stroke-dashoffset: 48;
-      animation: subDraw 0.4s ease-out 0.65s forwards;
-    }
-    @keyframes subDraw { to { stroke-dashoffset: 0; } }
-    @keyframes subPop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-    @keyframes subFade { from { opacity: 0; } to { opacity: 1; } }
-
-    
-
-    /* Compact No-Scroll Mobile Layout */
-    @media (max-width: 680px) {
-      body { padding: 4px; }
-      .card-header { flex-direction: column-reverse; text-align: center; padding: 14px; gap: 8px; }
-      .school-logo { width: 52px; height: 52px; }
-      .card-header h2 { font-size: 17px; }
-      .form-body { padding: 12px; }
-      .role-tabs { grid-template-columns: 1fr; gap: 8px; margin-bottom: 14px; }
-      .role-tab { padding: 13px 14px; font-size: 15px; }
-      .top-grid { grid-template-columns: 1fr; gap: 10px; margin-bottom: 14px; }
-      .name-row { flex-direction: column; }
-      .load-btn { width: 100%; padding: 12px; font-size: 14px; }
-      input[type="text"], input[type="date"], input[type="number"], select {
-        font-size: 16px !important;   /* 16px stops iPhones zooming in when a field is tapped */
-        padding: 9px 10px;
-        min-height: 44px;             /* comfortable thumb target */
-      }
-
-      /* Transform wide table into compact 100%-width day cards */
-      .table-wrap { border: none; overflow: visible; margin-bottom: 12px; }
-      table, tbody { display: block; width: 100%; }
-      thead { display: none; }
-      #scheduleBody tr[data-day] {
-        display: grid;
-        grid-template-columns: 32px 1fr 72px;
-        align-items: center;
-        gap: 6px 8px;
-        padding: 10px;
-        margin-bottom: 10px;
-        background: #fff;
-        border: 1.5px solid var(--border);
-        border-left: 4px solid var(--navy);
-        border-radius: 8px;
-      }
-      #scheduleBody tr[data-day] td {
-        display: block;
-        padding: 0;
-        border: none;
-        background: transparent !important;
-      }
-      #scheduleBody tr[data-day] td:nth-child(1) {
-        grid-column: 1 / 3;
-        grid-row: 1;
-        font-size: 14px;
-        padding-bottom: 4px;
-        border-bottom: 1px solid #E2E8F0;
-      }
-      #scheduleBody tr[data-day] td:nth-child(8) {
-        grid-column: 3 / 4;
-        grid-row: 1;
-        text-align: right;
-        font-size: 13.5px;
-        padding-bottom: 4px;
-        border-bottom: 1px solid #E2E8F0;
-      }
-      #scheduleBody tr[data-day] td:nth-child(8)::before {
-        content: "Total ";
-        font-size: 11px;
-        font-weight: 600;
-        color: #64748B;
-      }
-      #scheduleBody tr[data-day] td:nth-child(2) { grid-column: 1 / 2; grid-row: 2; text-align: left; }
-      #scheduleBody tr[data-day] td:nth-child(3) { grid-column: 2 / 3; grid-row: 2; text-align: left; }
-      #scheduleBody tr[data-day] td:nth-child(3)::before { content: "AM "; font-weight: 700; font-size: 11px; color: var(--navy); }
-      #scheduleBody tr[data-day] td:nth-child(6) { grid-column: 3 / 4; grid-row: 2; text-align: right; }
-      #scheduleBody tr[data-day] td:nth-child(6)::before { content: "+AM mins"; display: block; font-size: 9.5px; color: #64748B; text-align: center; }
-
-      #scheduleBody tr[data-day] td:nth-child(4) { grid-column: 1 / 2; grid-row: 3; text-align: left; }
-      #scheduleBody tr[data-day] td:nth-child(5) { grid-column: 2 / 3; grid-row: 3; text-align: left; }
-      #scheduleBody tr[data-day] td:nth-child(5)::before { content: "PM "; font-weight: 700; font-size: 11px; color: var(--navy); }
-      #scheduleBody tr[data-day] td:nth-child(7) { grid-column: 3 / 4; grid-row: 3; text-align: right; }
-      #scheduleBody tr[data-day] td:nth-child(7)::before { content: "+PM mins"; display: block; font-size: 9.5px; color: #64748B; text-align: center; }
-
-      input[type="checkbox"] { width: 22px; height: 22px; }
-      .time-pill { font-size: 11.5px; padding: 3px 7px; }
-      .extra-in { width: 68px !important; font-size: 14px !important; padding: 4px !important; min-height: 36px !important; }
-
-      .total-banner { flex-direction: column; text-align: center; gap: 4px; padding: 10px; margin-bottom: 14px; }
-      .cert-box { padding: 12px; margin-bottom: 14px; }
-      .cert-grid { grid-template-columns: 1fr; gap: 10px; }
-      .btn-row { grid-template-columns: 1fr; gap: 8px; }
-      .save-btn, .submit-btn { padding: 14px; font-size: 15px; }
-    }
-  </style>
+  <link rel="stylesheet" href="/css/index.css"
 </head>
 <body>
 
-  <!-- PORTAL NAVIGATION BAR -->
-<div class="portal-nav-strip">
-    <span class="portal-nav-label">Exams Portal:</span>
-    <div class="portal-nav-links">
-        <a href="./index.html" class="portal-nav-btn active">TimeSheet</a>
-        <a href="./approve.html" class="portal-nav-btn">Head of Exams Authorisation &rarr;</a>
-    </div>
-</div>
+      <!-- PORTAL NAVIGATION BAR -->
+            <div class="portal-nav-strip">
+                   <img
+                    src="/img/UBC Logo.png"
+                    alt="School Crest"
+                    class="school-logo"
+                    onerror="this.style.display='none'"/>
+                <div class="portal-nav-links">
+                    <a href="./index.html" class="portal-nav-btn">TimeSheet</a>
+                    <a href="./approve.html" class="portal-nav-btn active">Head of Exams Authorisation</a>
+                </div>
+            </div>
 
   <div class="form-card">
     <div class="card-header">
       <div>
         <div class="school-tag">Upton-by-Chester High School</div>
         <h2 id="formMainTitle">Supporting Invigilator Time Sheet</h2>
-        <p>Select your role tab below, choose your name to restore progress, or tick worked sessions.</p>
+        <p>Select your role tab below, choose your name to restore progress, or tick worked sessions. You can move between weeks and submit them all together.</p>
       </div>
     </div>
 
@@ -333,9 +91,17 @@
         <div class="total-banner">
           <div class="draft-note" id="draftStatus">Auto-saving locally in browser</div>
           <div>
-            <span class="total-label">Total Hours Claimed:</span>
+            <span class="total-label">This Week's Hours:</span>
             <span class="total-value" id="grandTotal">0:00</span>
           </div>
+        </div>
+
+        <!-- Every week ticked so far; all of them are sent when you press Submit -->
+        <div class="weeks-box" id="weeksBox">
+          <div class="weeks-title">Weeks included in this submission</div>
+          <div id="weeksList"></div>
+          <div class="weeks-total"><span>Total hours claimed (all weeks)</span><strong id="allWeeksTotal">0:00</strong></div>
+          <div class="weeks-hint">Change the week above to add another. Everything you tick is kept and sent together when you press Submit.</div>
         </div>
 
         <div class="cert-box">
@@ -384,6 +150,13 @@
     let scheduleLoaded = false;
     let namesLoaded = false;
     let draftRestoreDone = false;
+
+    // Every week the person has ticked so far, kept while they move between weeks:
+    //   key -> { role, period, week, days: [ {day, amWorked, amStart, ... } ] }
+    let weekStore = {};
+    // Which week the rows currently on screen belong to: { key, role, period, week }
+    let renderedMeta = null;
+
     const STORAGE_KEY = 'upton_invigilator_draft_v2';
     const claimDateEl = document.getElementById('claimDate');
     if (claimDateEl) claimDateEl.valueAsDate = new Date();
@@ -501,6 +274,8 @@
       periodSelect.innerHTML = '';
 
       if (periods.length === 0) {
+        snapshotRendered();
+        renderedMeta = null;
         periodSelect.innerHTML = '<option value="">No schedule found</option>';
         document.getElementById('weekCommencing').innerHTML = '<option value="">-</option>';
         document.getElementById('scheduleBody').innerHTML =
@@ -539,7 +314,190 @@
       renderScheduleRows();
     }
 
+    /* ---------- keeping every week's ticks while moving between weeks ---------- */
+
+    function makeKey(role, period, week) {
+      return role + '||' + period + '||' + week;
+    }
+
+    function roleShort(role) {
+      return role === 'Lead Invigilator' ? 'Lead' : 'Supporting';
+    }
+
+    function dayHasHours(d) {
+      return !!(d.amWorked || d.pmWorked || (parseInt(d.amExtra, 10) || 0) > 0 || (parseInt(d.pmExtra, 10) || 0) > 0);
+    }
+
+    function dayMinsFromData(d) {
+      let m = 0;
+      if (d.amWorked) {
+        const s = parseMinutes(d.amStart);
+        const f = parseMinutes(d.amFinish);
+        if (s !== null && f !== null && f > s) m += (f - s);
+      }
+      if (d.pmWorked) {
+        const s = parseMinutes(d.pmStart);
+        const f = parseMinutes(d.pmFinish);
+        if (s !== null && f !== null && f > s) m += (f - s);
+      }
+      m += (parseInt(d.amExtra, 10) || 0) + (parseInt(d.pmExtra, 10) || 0);
+      return m;
+    }
+
+    function weekDateValue(str) {
+      const m = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2}|\d{4})$/.exec(String(str || '').trim());
+      if (!m) return 0;
+      const y = m[3].length === 2 ? 2000 + parseInt(m[3], 10) : parseInt(m[3], 10);
+      return new Date(y, parseInt(m[2], 10) - 1, parseInt(m[1], 10)).getTime();
+    }
+
+    // Reads the rows currently on screen.
+    function readRowsFromDom() {
+      const days = [];
+      document.querySelectorAll('#scheduleBody tr[data-day]').forEach(tr => {
+        days.push({
+          day: tr.dataset.day,
+          amWorked: tr.querySelector('.am-check').checked,
+          amStart: tr.dataset.amStart,
+          amFinish: tr.dataset.amFinish,
+          pmWorked: tr.querySelector('.pm-check').checked,
+          pmStart: tr.dataset.pmStart,
+          pmFinish: tr.dataset.pmFinish,
+          amExtra: tr.querySelector('.am-extra').value,
+          pmExtra: tr.querySelector('.pm-extra').value
+        });
+      });
+      return days;
+    }
+
+    // Copies the week on screen into weekStore (or drops it if nothing is ticked).
+    function snapshotRendered() {
+      if (!renderedMeta) return;
+      const days = readRowsFromDom();
+      if (days.length === 0) return;
+      if (days.some(dayHasHours)) {
+        weekStore[renderedMeta.key] = {
+          role: renderedMeta.role,
+          period: renderedMeta.period,
+          week: renderedMeta.week,
+          days: days
+        };
+      } else {
+        delete weekStore[renderedMeta.key];
+      }
+    }
+
+    // Puts previously ticked values back onto the rows now on screen.
+    function restoreRowsFromStore() {
+      const saved = renderedMeta && weekStore[renderedMeta.key];
+      if (!saved) return;
+      document.querySelectorAll('#scheduleBody tr[data-day]').forEach(tr => {
+        const match = saved.days.find(d => d.day === tr.dataset.day);
+        if (!match) return;
+        if (!tr.querySelector('.am-check').disabled) tr.querySelector('.am-check').checked = !!match.amWorked;
+        if (!tr.querySelector('.pm-check').disabled) tr.querySelector('.pm-check').checked = !!match.pmWorked;
+        tr.querySelector('.am-extra').value = match.amExtra || 0;
+        tr.querySelector('.pm-extra').value = match.pmExtra || 0;
+      });
+    }
+
+    function sortedWeeks() {
+      return Object.keys(weekStore)
+        .map(k => Object.assign({ key: k }, weekStore[k]))
+        .filter(w => w.days.some(dayHasHours))
+        .sort((a, b) => a.role.localeCompare(b.role) || weekDateValue(a.week) - weekDateValue(b.week));
+    }
+
+    function goToWeek(w) {
+      snapshotRendered();
+      if (currentRole !== w.role) selectRole(w.role);
+      document.getElementById('examPeriod').value = w.period;
+      onPeriodChange();
+      document.getElementById('weekCommencing').value = w.week;
+      renderScheduleRows();
+      const body = document.getElementById('scheduleBody');
+      if (body && body.scrollIntoView) body.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function removeWeek(w) {
+      if (!confirm('Remove ' + w.period + ' — week com ' + w.week + ' from this submission?')) return;
+      delete weekStore[w.key];
+      if (renderedMeta && renderedMeta.key === w.key) {
+        renderedMeta = null;
+        renderScheduleRows();
+      } else {
+        recalculateAll();
+      }
+      saveLocalDraft();
+    }
+
+    // Shows every week that will be sent. Hidden when the only week with hours is the one on screen.
+    function renderWeeksSummary() {
+      const weeks = sortedWeeks();
+      const box = document.getElementById('weeksBox');
+      const onScreenOnly = weeks.length === 1 && renderedMeta && weeks[0].key === renderedMeta.key;
+      if (weeks.length === 0 || onScreenOnly) {
+        box.style.display = 'none';
+        return;
+      }
+      box.style.display = 'block';
+
+      const list = document.getElementById('weeksList');
+      list.innerHTML = '';
+      let all = 0;
+
+      weeks.forEach(w => {
+        const mins = w.days.reduce((t, d) => t + dayMinsFromData(d), 0);
+        all += mins;
+        const dayCount = w.days.filter(dayHasHours).length;
+
+        const item = document.createElement('div');
+        item.className = 'week-item' + (renderedMeta && renderedMeta.key === w.key ? ' current' : '');
+
+        const info = document.createElement('div');
+        const name = document.createElement('span');
+        name.className = 'week-name';
+        name.textContent = '[' + roleShort(w.role) + '] ' + w.period;
+        const sub = document.createElement('span');
+        sub.className = 'week-sub';
+        sub.textContent = 'Week com ' + w.week + ' · ' + dayCount + ' day' + (dayCount === 1 ? '' : 's');
+        info.appendChild(name);
+        info.appendChild(sub);
+        item.appendChild(info);
+
+        const right = document.createElement('div');
+        right.className = 'week-right';
+
+        const hrs = document.createElement('span');
+        hrs.className = 'week-hours';
+        hrs.textContent = formatHours(mins);
+        right.appendChild(hrs);
+
+        const view = document.createElement('button');
+        view.type = 'button';
+        view.className = 'week-btn';
+        view.textContent = 'View';
+        view.onclick = function() { goToWeek(w); };
+        right.appendChild(view);
+
+        const rm = document.createElement('button');
+        rm.type = 'button';
+        rm.className = 'week-btn danger';
+        rm.textContent = 'Remove';
+        rm.onclick = function() { removeWeek(w); };
+        right.appendChild(rm);
+
+        item.appendChild(right);
+        list.appendChild(item);
+      });
+
+      document.getElementById('allWeeksTotal').textContent = formatHours(all);
+    }
+
     function renderScheduleRows() {
+      // Keep whatever was ticked on the week we are leaving.
+      snapshotRendered();
+
       const period = document.getElementById('examPeriod').value;
       const week = document.getElementById('weekCommencing').value;
       const tbody = document.getElementById('scheduleBody');
@@ -547,6 +505,7 @@
 
       const rows = scheduleData.filter(s => s.role === currentRole && s.period === period && s.week === week);
       if (rows.length === 0) {
+        renderedMeta = null;
         tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">No sessions listed for this week.</td></tr>';
         recalculateAll();
         return;
@@ -577,6 +536,8 @@
         tbody.appendChild(tr);
       });
 
+      renderedMeta = { key: makeKey(currentRole, period, week), role: currentRole, period: period, week: week };
+      restoreRowsFromStore();
       recalculateAll();
     }
 
@@ -585,73 +546,102 @@
       saveLocalDraft();
     }
 
-    function collectPayload() {
-      const daysPayload = [];
-      document.querySelectorAll('#scheduleBody tr[data-day]').forEach(tr => {
-        daysPayload.push({
-          day: tr.dataset.day,
-          amWorked: tr.querySelector('.am-check').checked,
-          amStart: tr.dataset.amStart,
-          amFinish: tr.dataset.amFinish,
-          pmWorked: tr.querySelector('.pm-check').checked,
-          pmStart: tr.dataset.pmStart,
-          pmFinish: tr.dataset.pmFinish,
-          amExtra: tr.querySelector('.am-extra').value,
-          pmExtra: tr.querySelector('.pm-extra').value,
-          dailyTotalFormatted: tr.querySelector('.day-total').textContent
-        });
-      });
+    /* ---------- drafts (local + cloud) hold every week at once ---------- */
 
-      const roleShort = currentRole === 'Lead Invigilator' ? 'Lead' : 'Supporting';
-      const rawPeriod = document.getElementById('examPeriod').value;
-
+    function buildDraft() {
+      snapshotRendered();
       return {
         invigilatorName: document.getElementById('invigilatorName').value.trim(),
+        // What is currently selected, so the screen can be put back as it was.
         invigilatorRole: currentRole,
-        examPeriod: '[' + roleShort + '] ' + rawPeriod,
-        weekCommencing: document.getElementById('weekCommencing').value,
+        selPeriod: document.getElementById('examPeriod').value,
+        selWeek: document.getElementById('weekCommencing').value,
+        // Fixed values so each person has ONE saved draft on the server, covering all their weeks.
+        examPeriod: 'ALL',
+        weekCommencing: 'ALL',
         certifiedName: document.getElementById('signature').value.trim(),
         signature: document.getElementById('signature').value.trim(),
         claimDate: document.getElementById('claimDate').value,
-        days: daysPayload
+        store: weekStore
+      };
+    }
+
+    // Everything the person has ticked, in the shape the server expects, sent in one go.
+    function collectSubmission() {
+      snapshotRendered();
+      const weeks = sortedWeeks().map(w => ({
+        invigilatorRole: w.role,
+        examPeriod: '[' + roleShort(w.role) + '] ' + w.period,
+        weekCommencing: w.week,
+        days: w.days.filter(dayHasHours).map(d => ({
+          day: d.day,
+          amWorked: d.amWorked,
+          amStart: d.amStart,
+          amFinish: d.amFinish,
+          pmWorked: d.pmWorked,
+          pmStart: d.pmStart,
+          pmFinish: d.pmFinish,
+          amExtra: d.amExtra,
+          pmExtra: d.pmExtra,
+          dailyTotalFormatted: formatHours(dayMinsFromData(d))
+        }))
+      }));
+
+      return {
+        invigilatorName: document.getElementById('invigilatorName').value.trim(),
+        certifiedName: document.getElementById('signature').value.trim(),
+        signature: document.getElementById('signature').value.trim(),
+        claimDate: document.getElementById('claimDate').value,
+        weeks: weeks
       };
     }
 
     function applyDraftToForm(draft) {
       if (!draft) return;
       if (draft.invigilatorName) setNameValue(draft.invigilatorName);
+
+      // Drop what is on screen first so it can't overwrite the draft being loaded.
+      renderedMeta = null;
+
+      if (draft.store && typeof draft.store === 'object') {
+        weekStore = JSON.parse(JSON.stringify(draft.store));
+      } else if (Array.isArray(draft.days) && draft.invigilatorRole && draft.examPeriod && draft.weekCommencing) {
+        // Older single-week draft: turn it into one stored week.
+        const period = String(draft.examPeriod).replace(/^\[(Lead|Supporting)\]\s*/i, '');
+        weekStore = {};
+        weekStore[makeKey(draft.invigilatorRole, period, draft.weekCommencing)] = {
+          role: draft.invigilatorRole,
+          period: period,
+          week: draft.weekCommencing,
+          days: draft.days
+        };
+      } else {
+        weekStore = {};
+      }
+
       if (draft.invigilatorRole) {
         selectRole(draft.invigilatorRole);
       }
-      if (draft.examPeriod) {
-        const cleanPeriod = String(draft.examPeriod).replace(/^\[(Lead|Supporting)\]\s*/i, '');
-        document.getElementById('examPeriod').value = cleanPeriod;
+
+      const selPeriod = draft.selPeriod || String(draft.examPeriod || '').replace(/^\[(Lead|Supporting)\]\s*/i, '');
+      const selWeek = draft.selWeek || draft.weekCommencing;
+      if (selPeriod && selPeriod !== 'ALL') {
+        document.getElementById('examPeriod').value = selPeriod;
         onPeriodChange();
       }
-      if (draft.weekCommencing) {
-        document.getElementById('weekCommencing').value = draft.weekCommencing;
+      if (selWeek && selWeek !== 'ALL') {
+        document.getElementById('weekCommencing').value = selWeek;
         renderScheduleRows();
       }
+
       if (draft.signature) document.getElementById('signature').value = draft.signature;
       if (draft.claimDate) document.getElementById('claimDate').value = draft.claimDate;
-
-      if (Array.isArray(draft.days)) {
-        document.querySelectorAll('#scheduleBody tr[data-day]').forEach(tr => {
-          const match = draft.days.find(d => d.day === tr.dataset.day);
-          if (match) {
-            if (!tr.querySelector('.am-check').disabled) tr.querySelector('.am-check').checked = !!match.amWorked;
-            if (!tr.querySelector('.pm-check').disabled) tr.querySelector('.pm-check').checked = !!match.pmWorked;
-            tr.querySelector('.am-extra').value = match.amExtra || 0;
-            tr.querySelector('.pm-extra').value = match.pmExtra || 0;
-          }
-        });
-      }
       recalculateAll();
     }
 
     function saveLocalDraft() {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(collectPayload()));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(buildDraft()));
         document.getElementById('draftStatus').textContent = 'Draft auto-saved locally at ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       } catch (e) {}
     }
@@ -661,7 +651,9 @@
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return;
         const draft = JSON.parse(raw);
-        if (draft && (draft.invigilatorName || (draft.days && draft.days.some(d => d.amWorked || d.pmWorked)))) {
+        const hasStore = draft && draft.store && Object.keys(draft.store).length > 0;
+        const hasLegacyHours = draft && Array.isArray(draft.days) && draft.days.some(d => d.amWorked || d.pmWorked);
+        if (draft && (draft.invigilatorName || hasStore || hasLegacyHours)) {
           applyDraftToForm(draft);
           document.getElementById('draftStatus').textContent = 'Restored your previous unsent session';
         }
@@ -679,8 +671,6 @@
 
     function fetchCloudDraft(isSilent) {
       const name = document.getElementById('invigilatorName').value.trim();
-      const period = document.getElementById('examPeriod').value;
-      const week = document.getElementById('weekCommencing').value;
       if (!name) {
         if (!isSilent) alert('Please select your name from the list first.');
         return;
@@ -706,11 +696,11 @@
           loadBtn.textContent = 'Load Saved';
           loadBtn.disabled = false;
         })
-        .loadDraft(name, period, week);
+        .loadDraft(name, 'ALL', 'ALL');
     }
 
     function saveCloudDraft() {
-      const payload = collectPayload();
+      const payload = buildDraft();
       const status = document.getElementById('statusMsg');
       if (!payload.invigilatorName) {
         status.textContent = 'Please select your name before saving progress.';
@@ -791,13 +781,24 @@
       });
 
       document.getElementById('grandTotal').textContent = formatHours(grandMins);
+
+      // Keep the "weeks in this submission" list up to date.
+      snapshotRendered();
+      renderWeeksSummary();
     }
 
     document.getElementById('timeSheetForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const btn = document.getElementById('submitBtn');
       const status = document.getElementById('statusMsg');
-      const payload = collectPayload();
+      const payload = collectSubmission();
+
+      if (payload.weeks.length === 0) {
+        status.textContent = 'Please tick at least one AM or PM session (or add extra minutes) before submitting.';
+        status.className = 'status error';
+        status.style.display = 'block';
+        return;
+      }
 
       btn.disabled = true;
       btn.textContent = 'Submitting Time Sheet...';
@@ -807,6 +808,8 @@
         .withSuccessHandler(function(msg) {
           try { localStorage.removeItem(STORAGE_KEY); } catch (err) {}
           status.style.display = 'none';
+          weekStore = {};
+          renderedMeta = null;
           document.getElementById('timeSheetForm').reset();
           lastCheckedName = '';
           if (claimDateEl) claimDateEl.valueAsDate = new Date();
