@@ -1,3 +1,9 @@
+// ---------- Session Guard (Redirects to login.html if not signed in) ----------
+    const rawSession = sessionStorage.getItem('ubc_invig_session');
+    if (!rawSession) {
+      window.location.href = './login.html';
+    }
+    const activeUser = JSON.parse(rawSession || '{}');
 
     let scheduleData = [];
     let currentRole = 'Supporting Invigilator';
@@ -6,15 +12,32 @@
     let namesLoaded = false;
     let draftRestoreDone = false;
 
-    // Every week the person has ticked so far for the active period:
-    //   key -> { role, period, week, days: [ {day, amWorked, amStart, ... } ] }
     let weekStore = {};
-    // Which week the rows currently on screen belong to: { key, role, period, week }
     let renderedMeta = null;
 
-    const STORAGE_KEY = 'upton_invigilator_draft_v2';
+    const STORAGE_KEY = 'upton_invigilator_draft_v2_' + String(activeUser.email || 'user').toLowerCase();
+
     const claimDateEl = document.getElementById('claimDate');
     if (claimDateEl) claimDateEl.valueAsDate = new Date();
+
+    const nameInputEl = document.getElementById('invigilatorName');
+    if (nameInputEl && activeUser.name) {
+      nameInputEl.value = activeUser.name;
+    }
+    const emailHintEl = document.getElementById('loggedInEmailHint');
+    if (emailHintEl && activeUser.email) {
+      emailHintEl.textContent = 'Signed in as ' + activeUser.email;
+    }
+    namesLoaded = true;
+
+    function signOutUser() {
+      sessionStorage.removeItem('ubc_invig_session');
+      try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+      if (window.google && google.accounts && google.accounts.id) {
+        try { google.accounts.id.disableAutoSelect(); } catch (e) {}
+      }
+      window.location.href = './login.html';
+    }
 
     function cleanPeriodName(rawPeriod) {
       return String(rawPeriod || '').replace(/^\[(Lead|Supporting)\]\s*/i, '').trim();
@@ -36,18 +59,18 @@
       if (e.key === 'Escape') closeSubmitted();
     });
 
-    // A saved draft can only be put back once BOTH the schedule and the name list have loaded.
     function maybeRestoreDraft() {
       if (scheduleLoaded && namesLoaded && !draftRestoreDone) {
         draftRestoreDone = true;
         restoreLocalDraft();
+        autoCheckCloudDraft();
       }
     }
 
     google.script.run
       .withSuccessHandler(function(data) {
         scheduleData = data || [];
-        populatePeriods();
+        populatePeriods(true);
         scheduleLoaded = true;
         maybeRestoreDraft();
       })
@@ -57,68 +80,13 @@
       })
       .getExamSchedule();
 
-    google.script.run
-      .withSuccessHandler(function(names) {
-        populateNames(names || []);
-        namesLoaded = true;
-        maybeRestoreDraft();
-      })
-      .withFailureHandler(function() {
-        const sel = document.getElementById('invigilatorName');
-        sel.innerHTML = '<option value="">Could not load names - please refresh the page</option>';
-        namesLoaded = true;
-        maybeRestoreDraft();
-      })
-      .getInvigilatorList();
-
-    function populateNames(names) {
-      const sel = document.getElementById('invigilatorName');
-      const keep = sel.value;
-      sel.innerHTML = '';
-
-      const first = document.createElement('option');
-      first.value = '';
-      first.textContent = names.length ? 'Select your name...' : 'No names added yet - contact the Exams Office';
-      sel.appendChild(first);
-
-      names.forEach(function(n) {
-        const opt = document.createElement('option');
-        opt.value = n;
-        opt.textContent = n;
-        sel.appendChild(opt);
-      });
-
-      if (keep) setNameValue(keep);
-    }
-
-    // Selects a name in the drop-down. If it isn't on the list (for example a restored draft for someone
-    // who was later removed) it is added as an option so the draft isn't lost.
     function setNameValue(name) {
-      const sel = document.getElementById('invigilatorName');
-      const wanted = String(name || '').trim();
-      if (!wanted) { sel.value = ''; return; }
-
-      for (let i = 0; i < sel.options.length; i++) {
-        if (sel.options[i].value.trim().toLowerCase() === wanted.toLowerCase()) {
-          sel.selectedIndex = i;
-          return;
-        }
+      const inp = document.getElementById('invigilatorName');
+      if (inp && activeUser.name) {
+        inp.value = activeUser.name;
+      } else if (inp && name) {
+        inp.value = String(name).trim();
       }
-      const opt = document.createElement('option');
-      opt.value = wanted;
-      opt.textContent = wanted;
-      sel.appendChild(opt);
-      sel.value = wanted;
-    }
-
-    function onNameChange() {
-      // Clear previous person's ticks when switching names
-      renderedMeta = null;
-      weekStore = {};
-      lastCheckedKey = '';
-      renderScheduleRows();
-      saveLocalDraft();
-      autoCheckCloudDraft();
     }
 
     function selectRole(role, skipCloudCheck) {
@@ -126,7 +94,8 @@
       const isSupporting = role === 'Supporting Invigilator';
       document.getElementById('tabSupportingBtn').className = isSupporting ? 'role-tab active' : 'role-tab';
       document.getElementById('tabLeadBtn').className = isSupporting ? 'role-tab' : 'role-tab active';
-      document.getElementById('formMainTitle').textContent = role + ' Time Sheet';
+      const titleEl = document.getElementById('formMainTitle');
+      if (titleEl) titleEl.textContent = role + ' Time Sheet';
       populatePeriods(skipCloudCheck);
       saveLocalDraft();
     }
@@ -182,7 +151,6 @@
 
       renderScheduleRows();
 
-      // When the user switches to a different Exam Period, automatically check the cloud draft for that period
       if (!skipCloudCheck) {
         autoCheckCloudDraft();
       }
@@ -225,7 +193,6 @@
       return new Date(y, parseInt(m[2], 10) - 1, parseInt(m[1], 10)).getTime();
     }
 
-    // Reads the rows currently on screen.
     function readRowsFromDom() {
       const days = [];
       document.querySelectorAll('#scheduleBody tr[data-day]').forEach(tr => {
@@ -244,7 +211,6 @@
       return days;
     }
 
-    // Copies the week on screen into weekStore (or drops it if nothing is ticked).
     function snapshotRendered() {
       if (!renderedMeta) return;
       const days = readRowsFromDom();
@@ -261,7 +227,6 @@
       }
     }
 
-    // Puts previously ticked values back onto the rows now on screen.
     function restoreRowsFromStore() {
       const saved = renderedMeta && weekStore[renderedMeta.key];
       if (!saved) return;
@@ -275,7 +240,6 @@
       });
     }
 
-    // Only returns weeks belonging to the currently selected Exam Period
     function sortedWeeksForActivePeriod() {
       const activePeriod = cleanPeriodName(document.getElementById('examPeriod').value);
       return Object.keys(weekStore)
@@ -307,7 +271,6 @@
       saveLocalDraft();
     }
 
-    // Shows every week that will be sent for the active Exam Period.
     function renderWeeksSummary() {
       const weeks = sortedWeeksForActivePeriod();
       const box = document.getElementById('weeksBox');
@@ -421,14 +384,13 @@
       saveLocalDraft();
     }
 
-    /* ---------- drafts (local + cloud) scoped strictly to the selected Exam Period ---------- */
+    /* ---------- drafts (local + cloud) scoped strictly to the signed-in user & selected Exam Period ---------- */
 
     function buildDraft() {
       snapshotRendered();
       const selPeriod = document.getElementById('examPeriod').value;
       const cleanSelPeriod = cleanPeriodName(selPeriod);
 
-      // Filter store so ONLY weeks matching the active Exam Period are included
       const periodStore = {};
       Object.keys(weekStore).forEach(function(k) {
         const entry = weekStore[k];
@@ -438,7 +400,11 @@
       });
 
       return {
-        invigilatorName: document.getElementById('invigilatorName').value.trim(),
+        invigilatorName: activeUser.name || document.getElementById('invigilatorName').value.trim(),
+        email: activeUser.email,
+        password: activeUser.password || '',
+        authType: activeUser.authType || 'password',
+        credential: activeUser.credential || '',
         invigilatorRole: currentRole,
         selPeriod: selPeriod,
         selWeek: document.getElementById('weekCommencing').value,
@@ -451,7 +417,6 @@
       };
     }
 
-    // Everything the person has ticked for the active Exam Period, sent in one go.
     function collectSubmission() {
       snapshotRendered();
       const weeks = sortedWeeksForActivePeriod().map(w => ({
@@ -473,7 +438,11 @@
       }));
 
       return {
-        invigilatorName: document.getElementById('invigilatorName').value.trim(),
+        invigilatorName: activeUser.name || document.getElementById('invigilatorName').value.trim(),
+        email: activeUser.email,
+        password: activeUser.password || '',
+        authType: activeUser.authType || 'password',
+        credential: activeUser.credential || '',
         certifiedName: document.getElementById('signature').value.trim(),
         signature: document.getElementById('signature').value.trim(),
         claimDate: document.getElementById('claimDate').value,
@@ -483,14 +452,11 @@
 
     function applyDraftToForm(draft) {
       if (!draft) return;
-      if (draft.invigilatorName) setNameValue(draft.invigilatorName);
+      setNameValue(activeUser.name || draft.invigilatorName);
 
-      // Drop what is on screen first so it can't overwrite the draft being loaded.
       renderedMeta = null;
-
       const targetPeriod = cleanPeriodName(draft.selPeriod || draft.examPeriod);
 
-      // Clear any previous entries for this period before applying the loaded draft
       Object.keys(weekStore).forEach(function(k) {
         if (!targetPeriod || cleanPeriodName(weekStore[k].period) === targetPeriod) {
           delete weekStore[k];
@@ -505,7 +471,6 @@
           }
         });
       } else if (Array.isArray(draft.days) && draft.invigilatorRole && draft.examPeriod && draft.weekCommencing) {
-        // Older single-week draft
         const period = cleanPeriodName(draft.examPeriod);
         weekStore[makeKey(draft.invigilatorRole, period, draft.weekCommencing)] = {
           role: draft.invigilatorRole,
@@ -539,7 +504,10 @@
 
     function saveLocalDraft() {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(buildDraft()));
+        const localCopy = buildDraft();
+        delete localCopy.password;
+        delete localCopy.credential;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(localCopy));
         document.getElementById('draftStatus').textContent = 'Draft auto-saved locally at ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       } catch (e) {}
     }
@@ -549,9 +517,13 @@
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return;
         const draft = JSON.parse(raw);
+        if (draft && draft.invigilatorName && activeUser.name &&
+            draft.invigilatorName.trim().toLowerCase() !== activeUser.name.trim().toLowerCase()) {
+          return;
+        }
         const hasStore = draft && draft.store && Object.keys(draft.store).length > 0;
         const hasLegacyHours = draft && Array.isArray(draft.days) && draft.days.some(d => d.amWorked || d.pmWorked);
-        if (draft && (draft.invigilatorName || hasStore || hasLegacyHours)) {
+        if (draft && (hasStore || hasLegacyHours)) {
           applyDraftToForm(draft);
           document.getElementById('draftStatus').textContent = 'Restored your previous unsent session';
         }
@@ -559,7 +531,7 @@
     }
 
     function autoCheckCloudDraft() {
-      const name = document.getElementById('invigilatorName').value.trim();
+      const name = activeUser.name || document.getElementById('invigilatorName').value.trim();
       const period = cleanPeriodName(document.getElementById('examPeriod').value);
       if (!name || !period) return;
 
@@ -576,10 +548,10 @@
     }
 
     function fetchCloudDraft(isSilent) {
-      const name = document.getElementById('invigilatorName').value.trim();
+      const name = activeUser.name || document.getElementById('invigilatorName').value.trim();
       const period = cleanPeriodName(document.getElementById('examPeriod').value);
       if (!name) {
-        if (!isSilent) alert('Please select your name from the list first.');
+        signOutUser();
         return;
       }
       if (!period) {
@@ -600,7 +572,6 @@
             saveLocalDraft();
             document.getElementById('draftStatus').textContent = 'Loaded saved progress for ' + name + ' (' + period + ')';
           } else {
-            // Clear screen for this period if no cloud save exists for it yet
             renderedMeta = null;
             Object.keys(weekStore).forEach(function(k) {
               if (cleanPeriodName(weekStore[k].period) === period) {
@@ -613,20 +584,30 @@
             }
           }
         })
-        .withFailureHandler(function() {
+        .withFailureHandler(function(err) {
           loadBtn.textContent = 'Load Saved';
           loadBtn.disabled = false;
+          if (err && /unauthorised|expired/i.test(String(err.message))) {
+            alert(err.message);
+            signOutUser();
+          }
         })
-        .loadDraft(name, period, 'ALL');
+        .loadDraft(
+          name,
+          period,
+          'ALL',
+          activeUser.email,
+          activeUser.password || '',
+          activeUser.authType || 'password',
+          activeUser.credential || ''
+        );
     }
 
     function saveCloudDraft() {
       const payload = buildDraft();
       const status = document.getElementById('statusMsg');
       if (!payload.invigilatorName) {
-        status.textContent = 'Please select your name before saving progress.';
-        status.className = 'status error';
-        status.style.display = 'block';
+        signOutUser();
         return;
       }
       if (!payload.examPeriod) {
@@ -656,6 +637,9 @@
           status.style.display = 'block';
           btn.disabled = false;
           btn.textContent = 'Save Progress';
+          if (err && /unauthorised|expired/i.test(String(err.message))) {
+            signOutUser();
+          }
         })
         .saveDraft(payload);
     }
@@ -709,7 +693,6 @@
 
       document.getElementById('grandTotal').textContent = formatHours(grandMins);
 
-      // Keep the "weeks in this submission" list up to date.
       snapshotRendered();
       renderWeeksSummary();
     }
@@ -738,6 +721,7 @@
           weekStore = {};
           renderedMeta = null;
           document.getElementById('timeSheetForm').reset();
+          setNameValue(activeUser.name);
           lastCheckedKey = '';
           if (claimDateEl) claimDateEl.valueAsDate = new Date();
           document.getElementById('draftStatus').textContent = 'Submitted! Ready for next claim.';
@@ -752,6 +736,9 @@
           status.style.display = 'block';
           btn.disabled = false;
           btn.textContent = 'Submit Final Time Sheet';
+          if (err && /unauthorised|expired/i.test(String(err.message))) {
+            signOutUser();
+          }
         })
         .submitTimeSheet(payload);
     });

@@ -1,4 +1,4 @@
-     let savedPasscode = "";
+let savedPasscode = "";
      let managerFullName = "";
      let allClaims = [];
      let currentFiltered = [];
@@ -25,8 +25,6 @@
              } [m];
          });
      }
-
-     
 
      function isApprovedStatus(status) {
          return String(status || "").trim().toLowerCase().startsWith("approved");
@@ -278,7 +276,7 @@
                  const sigDisplay = c.signatureText || c.certifiedName || "Signed";
                  const editBtn = '<button type="button" class="edit-btn" onclick="openEdit(' + Number(c.rowNumber) + ')">Edit</button>' + '<button type="button" class="delete-btn" onclick="deleteClaim(' + Number(c.rowNumber) + ')">Delete</button>';
                  const actionHtml = approved ? '<span style="color:#64748B;font-size:12px;">Authorised</span> ' + editBtn : '<button class="approve-btn" onclick="approveSingle(' + Number(c.rowNumber) + ', this)">Approve</button> ' + editBtn;
-                 dayHtml += "<tr>" + "<td><strong>" + esc(c.day) + "</strong></td>" + "<td>" + (c.amWorked === "Yes" ? esc(c.amStart) + "-" + esc(c.amFinish) : "-") + "</td>" + "<td>" + (c.pmWorked === "Yes" ? esc(c.pmStart) + "-" + esc(c.pmFinish) : "-") + "</td>" + "<td>" + extraMinsOf(c) + "m</td>" + "<td><strong>" + esc(c.dailyTotal) + "</strong></td>" + '<td><span class="sig-text">' + esc(sigDisplay) + "</span></td>" + '<td><span class="' + badgeClass + '">' + esc(c.status) + "</span></td>" + '<td class="day-actions">' + actionHtml + "</td>" + "</tr>";
+                 dayHtml += "<tr>" + "<td><strong>" + esc(c.day) + "</strong></td>" + "<td>" + (c.amWorked === "Yes" ? esc(c.amStart) + "-" + esc(c.amFinish) : "-") + "</td>" + "<td>" + (c.pmWorked === "Yes" ? esc(c.pmStart) + "-" + esc(c.pmFinish) : "-") + "<td>" + extraMinsOf(c) + "m</td>" + "<td><strong>" + esc(c.dailyTotal) + "</strong></td>" + '<td><span class="sig-text">' + esc(sigDisplay) + "</span></td>" + '<td><span class="' + badgeClass + '">' + esc(c.status) + "</span></td>" + '<td class="day-actions">' + actionHtml + "</td>" + "</tr>";
              });
              const detail = document.createElement("tr");
              detail.className = "detail-row";
@@ -704,8 +702,22 @@
              container.appendChild(box);
          });
      }
-     /* ---------- invigilator list ---------- */
+     /* ---------- invigilator list & credential generator ---------- */
      let allPeople = [];
+
+     function generatePortalPassword() {
+         const digits = Math.floor(1000 + Math.random() * 9000);
+         return "Upton" + digits;
+     }
+
+     function copyGeneratedCreds(text, btnEl) {
+         navigator.clipboard.writeText(text).then(function() {
+             btnEl.textContent = "Copied!";
+             setTimeout(function() {
+                 btnEl.textContent = "Copy Login Details";
+             }, 2000);
+         });
+     }
 
      function loadPeople() {
          google.script.run.withSuccessHandler(function(list) {
@@ -721,7 +733,7 @@
      function renderPeople() {
          const box = document.getElementById("peopleList");
          box.innerHTML = "";
-         document.getElementById("peopleHeading").textContent = "Invigilators on the Form (" + allPeople.length + ")";
+         document.getElementById("peopleHeading").textContent = "Invigilators on the Portal (" + allPeople.length + ")";
          if (allPeople.length === 0) {
              const p = document.createElement("p");
              p.style.color = "#475569";
@@ -751,37 +763,66 @@
      }
 
      function addPerson() {
-         const input = document.getElementById("newPersonName");
+         const nameInput = document.getElementById("newPersonName");
+         const emailInput = document.getElementById("newPersonEmail");
          const statusEl = document.getElementById("peopleStatusMsg");
+         const credsBox = document.getElementById("generatedCredsBox");
          const btn = document.getElementById("addPersonBtn");
-         const name = input.value.replace(/\s+/g, " ").trim();
+
+         const name = nameInput.value.replace(/\s+/g, " ").trim();
+         const email = emailInput.value.trim().toLowerCase();
+
          if (name.length < 2) {
              statusEl.style.color = "#B91C1C";
              statusEl.textContent = "Please enter the invigilator's full name.";
+             nameInput.focus();
              return;
          }
+         if (!email || email.indexOf("@") === -1) {
+             statusEl.style.color = "#B91C1C";
+             statusEl.textContent = "Please enter a valid school email address.";
+             emailInput.focus();
+             return;
+         }
+
+         const generatedPassword = generatePortalPassword();
          btn.disabled = true;
          btn.textContent = "Adding...";
          statusEl.textContent = "";
+         credsBox.style.display = "none";
+
          google.script.run.withSuccessHandler(function(list) {
              allPeople = list || [];
              renderPeople();
-             input.value = "";
+             nameInput.value = "";
+             emailInput.value = "";
              statusEl.style.color = "#1B5E20";
-             statusEl.textContent = 'Added! "' + name + '" now appears in the claim form drop-down.';
+             statusEl.textContent = 'Added "' + name + '" to the portal.';
+
+             const shareText = "Invigilator Time Sheet Portal — Email: " + email + " | Portal Password: " + generatedPassword;
+             credsBox.innerHTML =
+                 "<strong>Login Created for " + esc(name) + "</strong><br>" +
+                 "School Email: <code>" + esc(email) + "</code> &nbsp;|&nbsp; " +
+                 "Portal Password: <code style='font-size:1.05em;font-weight:700;'>" + esc(generatedPassword) + "</code> " +
+                 "<button type='button' id='copyCredsBtn' style='margin-left:10px;padding:4px 10px;border:1px solid #166534;border-radius:4px;background:#fff;color:#166534;font-weight:700;cursor:pointer;'>Copy Login Details</button>";
+             credsBox.style.display = "block";
+             document.getElementById("copyCredsBtn").onclick = function() {
+                 copyGeneratedCreds(shareText, this);
+             };
+
              btn.disabled = false;
-             btn.textContent = "Add Person";
-             input.focus();
+             btn.textContent = "Add Person & Generate Password";
+             nameInput.focus();
          }).withFailureHandler(function(err) {
              statusEl.style.color = "#B91C1C";
              statusEl.textContent = "Error: " + err.message;
              btn.disabled = false;
-             btn.textContent = "Add Person";
-         }).addInvigilator(savedPasscode, name, managerFullName);
+             btn.textContent = "Add Person & Generate Password";
+         }).addInvigilator(savedPasscode, name, managerFullName, email, generatedPassword);
      }
 
      function removePerson(name, btn) {
-         if (!confirm('Remove "' + name + '" from the claim form drop-down?\n\nTheir existing claims and time sheet are not affected.')) return;
+         if (!confirm('Remove "' + name + '" from the portal?\n\nTheir existing claims and time sheet are not affected.')) return;
          btn.disabled = true;
          btn.textContent = "Removing...";
          google.script.run.withSuccessHandler(function(list) {
@@ -794,305 +835,305 @@
          }).removeInvigilator(savedPasscode, name);
      }
 
-async function exportIndividualTimesheet() {
-  const personName = String(document.getElementById('personSearchInput').value || '').trim();
-  if (!personName) {
-    alert('Please type or select an invigilator name first.');
-    return;
-  }
+     async function exportIndividualTimesheet() {
+       const personName = String(document.getElementById('personSearchInput').value || '').trim();
+       if (!personName) {
+         alert('Please type or select an invigilator name first.');
+         return;
+       }
 
-  const sourceClaims = (typeof allClaims !== 'undefined' && Array.isArray(allClaims))
-    ? allClaims
-    : (typeof claimsData !== 'undefined' && Array.isArray(claimsData) ? claimsData : []);
+       const sourceClaims = (typeof allClaims !== 'undefined' && Array.isArray(allClaims))
+         ? allClaims
+         : (typeof claimsData !== 'undefined' && Array.isArray(claimsData) ? claimsData : []);
 
-  let claims = sourceClaims.filter(
-    c => String(c.invigilatorName || '').trim().toLowerCase() === personName.toLowerCase()
-  );
+       let claims = sourceClaims.filter(
+         c => String(c.invigilatorName || '').trim().toLowerCase() === personName.toLowerCase()
+       );
 
-  const filterVal = String(document.getElementById('personMonthFilter').value || '').trim();
-  if (filterVal) {
-    claims = claims.filter(c => {
-      if (String(c.examPeriod || '').trim() === filterVal) return true;
-      const wkParts = String(c.weekCommencing || '').trim().split(/[\/\-.]/);
-      if (wkParts.length === 3) {
-        const y = wkParts[2].length === 2 ? '20' + wkParts[2] : wkParts[2];
-        const ym = y + '-' + wkParts[1].padStart(2, '0');
-        if (ym === filterVal || wkParts[1].padStart(2, '0') === filterVal) return true;
-      }
-      return false;
-    });
-  }
+       const filterVal = String(document.getElementById('personMonthFilter').value || '').trim();
+       if (filterVal) {
+         claims = claims.filter(c => {
+           if (String(c.examPeriod || '').trim() === filterVal) return true;
+           const wkParts = String(c.weekCommencing || '').trim().split(/[\/\-.]/);
+           if (wkParts.length === 3) {
+             const y = wkParts[2].length === 2 ? '20' + wkParts[2] : wkParts[2];
+             const ym = y + '-' + wkParts[1].padStart(2, '0');
+             if (ym === filterVal || wkParts[1].padStart(2, '0') === filterVal) return true;
+           }
+           return false;
+         });
+       }
 
-  if (claims.length === 0) {
-    alert('No claims found to export for ' + personName + '.');
-    return;
-  }
+       if (claims.length === 0) {
+         alert('No claims found to export for ' + personName + '.');
+         return;
+       }
 
-  const rawPeriod = String(claims[0].examPeriod || '').trim();
-  const isLead = /^\[Lead\]/i.test(rawPeriod);
-  const roleTitle = isLead ? 'LEAD INVIGILATOR' : 'SUPPORTING INVIGILATOR';
-  const cleanPeriod = rawPeriod.replace(/^\[(Lead|Supporting)\]\s*/i, '').trim() || rawPeriod;
+       const rawPeriod = String(claims[0].examPeriod || '').trim();
+       const isLead = /^\[Lead\]/i.test(rawPeriod);
+       const roleTitle = isLead ? 'LEAD INVIGILATOR' : 'SUPPORTING INVIGILATOR';
+       const cleanPeriod = rawPeriod.replace(/^\[(Lead|Supporting)\]\s*/i, '').trim() || rawPeriod;
 
-  function minsToHms(mins) {
-    const m = Math.max(0, Math.round(Number(mins) || 0));
-    const h = Math.floor(m / 60);
-    const rem = m % 60;
-    return h + ':' + String(rem).padStart(2, '0') + ':00';
-  }
+       function minsToHms(mins) {
+         const m = Math.max(0, Math.round(Number(mins) || 0));
+         const h = Math.floor(m / 60);
+         const rem = m % 60;
+         return h + ':' + String(rem).padStart(2, '0') + ':00';
+       }
 
-  function parseTimeMins(t) {
-    const p = String(t || '').trim().replace('.', ':').split(':');
-    if (p.length < 2) return null;
-    const h = parseInt(p[0], 10), m = parseInt(p[1], 10);
-    return (isNaN(h) || isNaN(m)) ? null : (h * 60 + m);
-  }
+       function parseTimeMins(t) {
+         const p = String(t || '').trim().replace('.', ':').split(':');
+         if (p.length < 2) return null;
+         const h = parseInt(p[0], 10), m = parseInt(p[1], 10);
+         return (isNaN(h) || isNaN(m)) ? null : (h * 60 + m);
+       }
 
-  const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet('Time Sheet');
+       const wb = new ExcelJS.Workbook();
+       const ws = wb.addWorksheet('Time Sheet');
 
-  // Column widths matching your template (Cols A - J)
-  ws.columns = [
-    { width: 22 }, // A: EXAM SESSIONS / Day
-    { width: 15 }, // B: AM START
-    { width: 19 }, // C: AM FINISH
-    { width: 17 }, // D: SESSIONS WORKED (AM)
-    { width: 15 }, // E: PM START
-    { width: 19 }, // F: PM FINISH
-    { width: 17 }, // G: SESSIONS WORKED (PM)
-    { width: 18 }, // H: ADDITIONAL HOURS AM
-    { width: 6 },  // I: Green divider column
-    { width: 18 }  // J: ADDITIONAL HOURS PM
-  ];
+       // Column widths matching your template (Cols A - J)
+       ws.columns = [
+         { width: 22 }, // A: EXAM SESSIONS / Day
+         { width: 15 }, // B: AM START
+         { width: 19 }, // C: AM FINISH
+         { width: 17 }, // D: SESSIONS WORKED (AM)
+         { width: 15 }, // E: PM START
+         { width: 19 }, // F: PM FINISH
+         { width: 17 }, // G: SESSIONS WORKED (PM)
+         { width: 18 }, // H: ADDITIONAL HOURS AM
+         { width: 6 },  // I: Green divider column
+         { width: 18 }  // J: ADDITIONAL HOURS PM
+       ];
 
-  const thinBorder = {
-    top: { style: 'thin', color: { argb: 'FF000000' } },
-    left: { style: 'thin', color: { argb: 'FF000000' } },
-    bottom: { style: 'thin', color: { argb: 'FF000000' } },
-    right: { style: 'thin', color: { argb: 'FF000000' } }
-  };
-  const sideBorder = {
-    left: { style: 'thin', color: { argb: 'FF000000' } },
-    right: { style: 'thin', color: { argb: 'FF000000' } }
-  };
-  const sageFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFA9C79B' } };
-  const greyFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
+       const thinBorder = {
+         top: { style: 'thin', color: { argb: 'FF000000' } },
+         left: { style: 'thin', color: { argb: 'FF000000' } },
+         bottom: { style: 'thin', color: { argb: 'FF000000' } },
+         right: { style: 'thin', color: { argb: 'FF000000' } }
+       };
+       const sideBorder = {
+         left: { style: 'thin', color: { argb: 'FF000000' } },
+         right: { style: 'thin', color: { argb: 'FF000000' } }
+       };
+       const sageFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFA9C79B' } };
+       const greyFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
 
-  // Title, Exam Period, and Name rows
-  ws.getCell('A1').value = 'UPTON-BY-CHESTER HIGH SCHOOL- ' + roleTitle + ' TIME SHEET';
-  ws.getCell('A1').font = { name: 'Arial', size: 12, bold: true };
+       // Title, Exam Period, and Name rows
+       ws.getCell('A1').value = 'UPTON-BY-CHESTER HIGH SCHOOL- ' + roleTitle + ' TIME SHEET';
+       ws.getCell('A1').font = { name: 'Arial', size: 12, bold: true };
 
-  ws.getCell('A2').value = cleanPeriod;
-  ws.getCell('A2').font = { name: 'Arial', size: 11, bold: true };
+       ws.getCell('A2').value = cleanPeriod;
+       ws.getCell('A2').font = { name: 'Arial', size: 11, bold: true };
 
-  ws.getCell('A4').value = 'NAME';
-  ws.getCell('A4').font = { name: 'Arial', size: 10, bold: true };
-  ws.getCell('B4').value = personName;
-  ws.getCell('B4').font = { name: 'Arial', size: 10, bold: true };
+       ws.getCell('A4').value = 'NAME';
+       ws.getCell('A4').font = { name: 'Arial', size: 10, bold: true };
+       ws.getCell('B4').value = personName;
+       ws.getCell('B4').font = { name: 'Arial', size: 10, bold: true };
 
-  // Group claims by Week Commencing
-  const weekMap = new Map();
-  claims.forEach(c => {
-    const wk = String(c.weekCommencing || '').trim();
-    if (!weekMap.has(wk)) weekMap.set(wk, []);
-    weekMap.get(wk).push(c);
-  });
+       // Group claims by Week Commencing
+       const weekMap = new Map();
+       claims.forEach(c => {
+         const wk = String(c.weekCommencing || '').trim();
+         if (!weekMap.has(wk)) weekMap.set(wk, []);
+         weekMap.get(wk).push(c);
+       });
 
-  let r = 6;
-  let grandTotalMins = 0;
-  const defaultDays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'];
+       let r = 6;
+       let grandTotalMins = 0;
+       const defaultDays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'];
 
-  weekMap.forEach((weekClaims, weekCom) => {
-    // Header Row
-    const hdrRow = ws.getRow(r);
-    hdrRow.values = [
-      'EXAM SESSIONS',
-      'AM START\nINC SET UP',
-      'AM FINISH\nINC PACK UP/SET UP',
-      'SESSIONS WORKED',
-      'PM START\nINC SET UP',
-      'PM FINISH\nINC PACK UP/SET UP',
-      'SESSIONS WORKED',
-      'ADDITIONAL HOURS AGREED WITH EXAM TEAM DUE TO ET / RB',
-      '',
-      ''
-    ];
-    hdrRow.height = 30;
-    ws.mergeCells(r, 8, r, 10);
-    for (let c = 1; c <= 10; c++) {
-      const cell = hdrRow.getCell(c);
-      cell.font = { name: 'Arial', size: 9, bold: true };
-      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-      cell.border = thinBorder;
-    }
-    r++;
+       weekMap.forEach((weekClaims, weekCom) => {
+         // Header Row
+         const hdrRow = ws.getRow(r);
+         hdrRow.values = [
+           'EXAM SESSIONS',
+           'AM START\nINC SET UP',
+           'AM FINISH\nINC PACK UP/SET UP',
+           'SESSIONS WORKED',
+           'PM START\nINC SET UP',
+           'PM FINISH\nINC PACK UP/SET UP',
+           'SESSIONS WORKED',
+           'ADDITIONAL HOURS AGREED WITH EXAM TEAM DUE TO ET / RB',
+           '',
+           ''
+         ];
+         hdrRow.height = 30;
+         ws.mergeCells(r, 8, r, 10);
+         for (let c = 1; c <= 10; c++) {
+           const cell = hdrRow.getCell(c);
+           cell.font = { name: 'Arial', size: 9, bold: true };
+           cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+           cell.border = thinBorder;
+         }
+         r++;
 
-    // Sub-header Row (WEEK COM + AM/PM)
-    const subRow = ws.getRow(r);
-    subRow.values = ['WEEK COM ' + weekCom, '', '', '', '', '', '', 'AM', '', 'PM'];
-    ws.mergeCells(r, 2, r, 7);
-    for (let c = 1; c <= 10; c++) {
-      const cell = subRow.getCell(c);
-      cell.font = { name: 'Arial', size: 9, bold: true };
-      if (c === 1) {
-        cell.border = thinBorder;
-      } else if (c >= 2 && c <= 7) {
-        cell.fill = sageFill;
-        cell.border = { top: thinBorder.top, bottom: thinBorder.bottom };
-      } else if (c === 9) {
-        cell.fill = sageFill;
-        cell.border = sideBorder;
-      } else {
-        cell.border = thinBorder;
-      }
-    }
-    r++;
+         // Sub-header Row (WEEK COM + AM/PM)
+         const subRow = ws.getRow(r);
+         subRow.values = ['WEEK COM ' + weekCom, '', '', '', '', '', '', 'AM', '', 'PM'];
+         ws.mergeCells(r, 2, r, 7);
+         for (let c = 1; c <= 10; c++) {
+           const cell = subRow.getCell(c);
+           cell.font = { name: 'Arial', size: 9, bold: true };
+           if (c === 1) {
+             cell.border = thinBorder;
+           } else if (c >= 2 && c <= 7) {
+             cell.fill = sageFill;
+             cell.border = { top: thinBorder.top, bottom: thinBorder.bottom };
+           } else if (c === 9) {
+             cell.fill = sageFill;
+             cell.border = sideBorder;
+           } else {
+             cell.border = thinBorder;
+           }
+         }
+         r++;
 
-    // 5 Day Rows (MONDAY - FRIDAY)
-    defaultDays.forEach(dayName => {
-      const match = weekClaims.find(c => String(c.day || '').trim().toUpperCase() === dayName);
-      const dayRow = ws.getRow(r);
+         // 5 Day Rows (MONDAY - FRIDAY)
+         defaultDays.forEach(dayName => {
+           const match = weekClaims.find(c => String(c.day || '').trim().toUpperCase() === dayName);
+           const dayRow = ws.getRow(r);
 
-      let amStart = '', amFinish = '', amBox = '☐';
-      let pmStart = '', pmFinish = '', pmBox = '☐';
-      let amExtraStr = '', pmExtraStr = '';
+           let amStart = '', amFinish = '', amBox = '☐';
+           let pmStart = '', pmFinish = '', pmBox = '☐';
+           let amExtraStr = '', pmExtraStr = '';
 
-      if (match) {
-        const amWorked = match.amWorked === 'Yes';
-        const pmWorked = match.pmWorked === 'Yes';
-        const amExtra = Number(match.amExtra) || 0;
-        const pmExtra = Number(match.pmExtra) || 0;
+           if (match) {
+             const amWorked = match.amWorked === 'Yes';
+             const pmWorked = match.pmWorked === 'Yes';
+             const amExtra = Number(match.amExtra) || 0;
+             const pmExtra = Number(match.pmExtra) || 0;
 
-        let dayMins = amExtra + pmExtra;
-        if (amWorked) {
-          amStart = match.amStart || '';
-          amFinish = match.amFinish || '';
-          amBox = '☑';
-          const s = parseTimeMins(match.amStart), f = parseTimeMins(match.amFinish);
-          if (s !== null && f !== null && f > s) dayMins += (f - s);
-        }
-        if (pmWorked) {
-          pmStart = match.pmStart || '';
-          pmFinish = match.pmFinish || '';
-          pmBox = '☑';
-          const s = parseTimeMins(match.pmStart), f = parseTimeMins(match.pmFinish);
-          if (s !== null && f !== null && f > s) dayMins += (f - s);
-        }
-        if (amExtra > 0) amExtraStr = minsToHms(amExtra);
-        if (pmExtra > 0) pmExtraStr = minsToHms(pmExtra);
-        grandTotalMins += dayMins;
-      }
+             let dayMins = amExtra + pmExtra;
+             if (amWorked) {
+               amStart = match.amStart || '';
+               amFinish = match.amFinish || '';
+               amBox = '☑';
+               const s = parseTimeMins(match.amStart), f = parseTimeMins(match.amFinish);
+               if (s !== null && f !== null && f > s) dayMins += (f - s);
+             }
+             if (pmWorked) {
+               pmStart = match.pmStart || '';
+               pmFinish = match.pmFinish || '';
+               pmBox = '☑';
+               const s = parseTimeMins(match.pmStart), f = parseTimeMins(match.pmFinish);
+               if (s !== null && f !== null && f > s) dayMins += (f - s);
+             }
+             if (amExtra > 0) amExtraStr = minsToHms(amExtra);
+             if (pmExtra > 0) pmExtraStr = minsToHms(pmExtra);
+             grandTotalMins += dayMins;
+           }
 
-      dayRow.values = [dayName, amStart, amFinish, amBox, pmStart, pmFinish, pmBox, amExtraStr, '', pmExtraStr];
-      for (let c = 1; c <= 10; c++) {
-        const cell = dayRow.getCell(c);
-        cell.font = { name: 'Arial', size: c === 4 || c === 7 ? 12 : 10 };
-        if (c === 1) {
-          cell.fill = greyFill;
-          cell.border = thinBorder;
-          cell.alignment = { horizontal: 'left', vertical: 'middle' };
-        } else if (c === 9) {
-          cell.fill = sageFill;
-          cell.border = sideBorder;
-        } else {
-          cell.border = thinBorder;
-          cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        }
-      }
-      r++;
-    });
+           dayRow.values = [dayName, amStart, amFinish, amBox, pmStart, pmFinish, pmBox, amExtraStr, '', pmExtraStr];
+           for (let c = 1; c <= 10; c++) {
+             const cell = dayRow.getCell(c);
+             cell.font = { name: 'Arial', size: c === 4 || c === 7 ? 12 : 10 };
+             if (c === 1) {
+               cell.fill = greyFill;
+               cell.border = thinBorder;
+               cell.alignment = { horizontal: 'left', vertical: 'middle' };
+             } else if (c === 9) {
+               cell.fill = sageFill;
+               cell.border = sideBorder;
+             } else {
+               cell.border = thinBorder;
+               cell.alignment = { horizontal: 'center', vertical: 'middle' };
+             }
+           }
+           r++;
+         });
 
-    // Sage green separator bar after each week
-    const sepRow = ws.getRow(r);
-    sepRow.height = 14;
-    for (let c = 1; c <= 10; c++) {
-      const cell = sepRow.getCell(c);
-      cell.fill = sageFill;
-      cell.border = c === 9 ? sideBorder : { top: thinBorder.top, bottom: thinBorder.bottom, left: c === 1 ? thinBorder.left : undefined, right: c === 10 ? thinBorder.right : undefined };
-    }
-    r++;
-  });
+         // Sage green separator bar after each week
+         const sepRow = ws.getRow(r);
+         sepRow.height = 14;
+         for (let c = 1; c <= 10; c++) {
+           const cell = sepRow.getCell(c);
+           cell.fill = sageFill;
+           cell.border = c === 9 ? sideBorder : { top: thinBorder.top, bottom: thinBorder.bottom, left: c === 1 ? thinBorder.left : undefined, right: c === 10 ? thinBorder.right : undefined };
+         }
+         r++;
+       });
 
- // Total Hours Claimed Row (Cols H & I)
-  const totRow = ws.getRow(r);
-  totRow.getCell(8).value = 'TOTAL HOURS CLAIMED';
-  totRow.getCell(8).font = { name: 'Arial', size: 9, bold: true };
-  totRow.getCell(8).border = thinBorder;
+       // Total Hours Claimed Row (Cols H & I)
+       const totRow = ws.getRow(r);
+       totRow.getCell(8).value = 'TOTAL HOURS CLAIMED';
+       totRow.getCell(8).font = { name: 'Arial', size: 9, bold: true };
+       totRow.getCell(8).border = thinBorder;
 
-  totRow.getCell(9).value = minsToHms(grandTotalMins);
-  totRow.getCell(9).font = { name: 'Arial', size: 10, bold: true };
-  totRow.getCell(9).alignment = { horizontal: 'right', vertical: 'middle' };
-  totRow.getCell(9).border = thinBorder;
-  r++;
+       totRow.getCell(9).value = minsToHms(grandTotalMins);
+       totRow.getCell(9).font = { name: 'Arial', size: 10, bold: true };
+       totRow.getCell(9).alignment = { horizontal: 'right', vertical: 'middle' };
+       totRow.getCell(9).border = thinBorder;
+       r++;
 
-  // Decimal Hours Row for Finance (Cols H & I)
-  const decimalHours = Number((grandTotalMins / 60).toFixed(2));
-  const decRow = ws.getRow(r);
-  decRow.getCell(8).value = 'TOTAL HOURS (DECIMAL)';
-  decRow.getCell(8).font = { name: 'Arial', size: 9, bold: true };
-  decRow.getCell(8).border = thinBorder;
+       // Decimal Hours Row for Finance (Cols H & I)
+       const decimalHours = Number((grandTotalMins / 60).toFixed(2));
+       const decRow = ws.getRow(r);
+       decRow.getCell(8).value = 'TOTAL HOURS (DECIMAL)';
+       decRow.getCell(8).font = { name: 'Arial', size: 9, bold: true };
+       decRow.getCell(8).border = thinBorder;
 
-  decRow.getCell(9).value = decimalHours;
-  decRow.getCell(9).numFmt = '0.00';
-  decRow.getCell(9).font = { name: 'Arial', size: 10, bold: true };
-  decRow.getCell(9).alignment = { horizontal: 'right', vertical: 'middle' };
-  decRow.getCell(9).border = thinBorder;
-  r += 2;
+       decRow.getCell(9).value = decimalHours;
+       decRow.getCell(9).numFmt = '0.00';
+       decRow.getCell(9).font = { name: 'Arial', size: 10, bold: true };
+       decRow.getCell(9).alignment = { horizontal: 'right', vertical: 'middle' };
+       decRow.getCell(9).border = thinBorder;
+       r += 2;
 
-  // Certification & Authorisation Footer
-  const latest = claims[claims.length - 1];
-  const isApproved = String(latest.status || '').toLowerCase().startsWith('approved');
+       // Certification & Authorisation Footer
+       const latest = claims[claims.length - 1];
+       const isApproved = String(latest.status || '').toLowerCase().startsWith('approved');
 
-  ws.getCell(r, 1).value = 'I certify that I have worked the hours claimed above:';
-  ws.getCell(r, 1).font = { name: 'Arial', size: 10, bold: true };
-  r++;
+       ws.getCell(r, 1).value = 'I certify that I have worked the hours claimed above:';
+       ws.getCell(r, 1).font = { name: 'Arial', size: 10, bold: true };
+       r++;
 
-  const certFields = [
-    ['Name', latest.certifiedName || personName, false],
-    ['signed', latest.signatureText || '', true],
-    ['Date', latest.claimDate || '', false]
-  ];
-  certFields.forEach(([label, val, italic]) => {
-    ws.getCell(r, 1).value = label;
-    ws.getCell(r, 1).font = { name: 'Arial', size: 10, bold: true };
-    ws.getCell(r, 1).border = thinBorder;
+       const certFields = [
+         ['Name', latest.certifiedName || personName, false],
+         ['signed', latest.signatureText || '', true],
+         ['Date', latest.claimDate || '', false]
+       ];
+       certFields.forEach(([label, val, italic]) => {
+         ws.getCell(r, 1).value = label;
+         ws.getCell(r, 1).font = { name: 'Arial', size: 10, bold: true };
+         ws.getCell(r, 1).border = thinBorder;
 
-    ws.mergeCells(r, 2, r, 3);
-    ws.getCell(r, 2).value = val;
-    ws.getCell(r, 2).font = { name: 'Arial', size: 10, italic: italic };
-    ws.getCell(r, 2).border = thinBorder;
-    ws.getCell(r, 3).border = thinBorder;
-    r++;
-  });
+         ws.mergeCells(r, 2, r, 3);
+         ws.getCell(r, 2).value = val;
+         ws.getCell(r, 2).font = { name: 'Arial', size: 10, italic: italic };
+         ws.getCell(r, 2).border = thinBorder;
+         ws.getCell(r, 3).border = thinBorder;
+         r++;
+       });
 
-  r++;
-  ws.getCell(r, 1).value = 'AUTHORISED BY EXAMINATIONS MANAGER';
-  ws.getCell(r, 1).font = { name: 'Arial', size: 10, bold: true };
-  r++;
+       r++;
+       ws.getCell(r, 1).value = 'AUTHORISED BY EXAMINATIONS MANAGER';
+       ws.getCell(r, 1).font = { name: 'Arial', size: 10, bold: true };
+       r++;
 
-  ws.getCell(r, 1).value = 'NAME';
-  ws.getCell(r, 1).font = { name: 'Arial', size: 10, bold: true };
-  ws.getCell(r, 1).border = thinBorder;
+       ws.getCell(r, 1).value = 'NAME';
+       ws.getCell(r, 1).font = { name: 'Arial', size: 10, bold: true };
+       ws.getCell(r, 1).border = thinBorder;
 
-  ws.mergeCells(r, 2, r, 3);
-  ws.getCell(r, 2).value = isApproved ? latest.status : 'Pending';
-  ws.getCell(r, 2).font = { name: 'Arial', size: 10 };
-  ws.getCell(r, 2).border = thinBorder;
-  ws.getCell(r, 3).border = thinBorder;
+       ws.mergeCells(r, 2, r, 3);
+       ws.getCell(r, 2).value = isApproved ? latest.status : 'Pending';
+       ws.getCell(r, 2).font = { name: 'Arial', size: 10 };
+       ws.getCell(r, 2).border = thinBorder;
+       ws.getCell(r, 3).border = thinBorder;
 
-  // Write true .xlsx binary buffer and download
-  const buffer = await wb.xlsx.writeBuffer();
-  const blob = new Blob([buffer], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-  });
-  const url = URL.createObjectURL(blob);
+       // Write true .xlsx binary buffer and download
+       const buffer = await wb.xlsx.writeBuffer();
+       const blob = new Blob([buffer], {
+         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+       });
+       const url = URL.createObjectURL(blob);
 
-  const link = document.createElement('a');
-  const safeName = personName.replace(/[^a-z0-9_-]/gi, '_');
-  const safePeriod = cleanPeriod.replace(/[^a-z0-9_-]/gi, '_');
-  link.href = url;
-  link.download = `${safeName}_${safePeriod}_TimeSheet.xlsx`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
+       const link = document.createElement('a');
+       const safeName = personName.replace(/[^a-z0-9_-]/gi, '_');
+       const safePeriod = cleanPeriod.replace(/[^a-z0-9_-]/gi, '_');
+       link.href = url;
+       link.download = `${safeName}_${safePeriod}_TimeSheet.xlsx`;
+       document.body.appendChild(link);
+       link.click();
+       document.body.removeChild(link);
+       URL.revokeObjectURL(url);
+     }

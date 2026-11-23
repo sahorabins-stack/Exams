@@ -5,30 +5,28 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Invigilator Time Sheet</title>
-  <link rel="stylesheet" href="./css/index.css"</link>
+  <link rel="stylesheet" href="./css/index.css">
 </head>
 <body>
 
-      <!-- PORTAL NAVIGATION BAR -->
-            <div class="portal-nav-strip">
-                   <img
-                    src="./img/UBC Logo.png"
-                    alt="School Crest"
-                    class="school-logo"
-                    onerror="this.style.display='none'"/>
-                <div class="portal-nav-links">
-                    <a href="./index.html" class="portal-nav-btn active">TimeSheet</a>
-                    <a href="./approve.html" class="portal-nav-btn">Head of Exams Authorisation</a>
-                </div>
-            </div>
+  <!-- PORTAL NAVIGATION BAR -->
+  <div class="portal-nav-strip">
+    <img
+      src="./img/UBC Logo.png"
+      alt="School Crest"
+      class="school-logo"
+      onerror="this.style.display='none'"/>
+    <div class="portal-nav-links">
+      <a href="./login.html" class="portal-nav-btn active">TimeSheet</a>
+      <a href="./approve.html" class="portal-nav-btn">Head of Exams Authorisation</a>
+    </div>
+  </div>
 
-  <div class="form-card">
-    <div class="card-header">
-      <div>
-        <div class="school-tag">Upton-by-Chester High School</div>
-        <h2 id="formMainTitle">Supporting Invigilator Time Sheet</h2>
-        <p>Select your role tab below, choose your name to restore progress, or tick worked sessions. You can move between weeks and submit them all together.</p>
-      </div>
+  <div class="container">
+    <div class="header-card">
+      <div class="school-name">UPTON-BY-CHESTER HIGH SCHOOL</div>
+      <h1>Invigilator Time Sheet</h1>
+      <p>Select your exam period and week, tick the sessions worked, and submit for authorisation.</p>
     </div>
 
     <div class="form-body">
@@ -42,12 +40,11 @@
           <div>
             <label for="invigilatorName">Invigilator Full Name *</label>
             <div class="name-row">
-              <select id="invigilatorName" onchange="onNameChange()" required>
-                <option value="">Loading names...</option>
-              </select>
+              <input type="text" id="invigilatorName" readonly style="background: #f1f5f9; font-weight: 700; color: #0D2D6C;" required />
               <button type="button" class="load-btn" id="loadBtn" onclick="manualLoadDraft()">Load Saved</button>
+              <button type="button" class="load-btn" onclick="signOutUser()" style="background: #fff; color: #0D2D6C; border: 1px solid #cbd5e1;">Sign Out</button>
             </div>
-            <div class="name-hint">Can't see your name? Please contact the Exams Office.</div>
+            <div class="name-hint" id="loggedInEmailHint">Signed in to your personal time sheet.</div>
           </div>
           <div>
             <label for="examPeriod">Exam Period *</label>

@@ -3,23 +3,25 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="stylesheet" href="./css/approve.css"</link>
+        <link rel="stylesheet" href="./css/approve.css" />
         <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
         <title>Invigilator Claim Authorisation</title>
     </head>
     <body>
-            <!-- PORTAL NAVIGATION BAR -->
-            <div class="portal-nav-strip">
-                   <img
-                    src="./img/UBC Logo.png"
-                    alt="School Crest"
-                    class="school-logo"
-                    onerror="this.style.display='none'"/>
-                <div class="portal-nav-links">
-                    <a href="./index.html" class="portal-nav-btn"> TimeSheet</a>
-                    <a href="./approve.html" class="portal-nav-btn active">Head of Exams Authorisation</a>
-                </div>
+        <!-- PORTAL NAVIGATION BAR -->
+        <div class="portal-nav-strip">
+            <img
+                src="./img/UBC Logo.png"
+                alt="School Crest"
+                class="school-logo"
+                onerror="this.style.display='none'"
+            />
+            <div class="portal-nav-links">
+                <a href="./login.html" class="portal-nav-btn">TimeSheet</a>
+                <a href="./approve.html" class="portal-nav-btn active">Head of Exams Authorisation</a>
             </div>
+        </div>
+
         <div class="card">
             <div class="card-header">
                 <div>
@@ -158,11 +160,11 @@
                             <option value="">All Months</option>
                         </select>
                         <button
-    type="button"
-    class="export-btn"
-    onclick="exportIndividualTimesheet()">
-    Export Timesheet
-</button>
+                            type="button"
+                            class="export-btn"
+                            onclick="exportIndividualTimesheet()">
+                            Export Timesheet
+                        </button>
                     </div>
                     <div id="personSheetContainer"></div>
                 </div>
@@ -267,24 +269,35 @@
                 <!-- TAB 4: INVIGILATOR LIST MANAGER -->
                 <div id="peopleView" style="display: none;">
                     <div class="section-box">
-                        <h3>Add Invigilator to Claim Form Drop-Down</h3>
+                        <h3>Add Invigilator &amp; Generate Portal Login</h3>
                         <div style="display: flex; flex-wrap: wrap; gap: 10px;">
                             <input
                                 type="text"
                                 id="newPersonName"
                                 placeholder="Full Name (e.g. Jane Doe)"
-                                style="flex: 1; min-width: 220px; background: #fff;"
+                                style="flex: 1; min-width: 190px; background: #fff;"
+                                onkeydown="if(event.key==='Enter') document.getElementById('newPersonEmail').focus()"
+                            />
+                            <input
+                                type="email"
+                                id="newPersonEmail"
+                                placeholder="School Email (e.g. j.doe@uptonhigh.co.uk)"
+                                style="flex: 1; min-width: 230px; background: #fff;"
                                 onkeydown="if(event.key==='Enter') addPerson()"
                             />
                             <button type="button" class="export-btn" id="addPersonBtn" onclick="addPerson()">
-                                Add Person
+                                Add Person &amp; Generate Password
                             </button>
                         </div>
                         <div id="peopleStatusMsg" style="margin-top: 10px; font-weight: 700; font-size: 13.5px;"></div>
+                        <div
+                            id="generatedCredsBox"
+                            style="display: none; margin-top: 12px; padding: 12px 14px; background: #f0fdf4; border: 1px solid #86efac; color: #166534; border-radius: 6px; font-size: 13.5px; line-height: 1.5;"
+                        ></div>
                     </div>
 
                     <div class="section-box">
-                        <h3 id="peopleHeading">Invigilators on the Form</h3>
+                        <h3 id="peopleHeading">Invigilators on the Portal</h3>
                         <div id="peopleList"></div>
                     </div>
                 </div>
