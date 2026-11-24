@@ -4,6 +4,7 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="stylesheet" href="./css/approve.css" />
+        <script src="https://accounts.google.com/gsi/client" async defer></script>
         <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
         <title>Invigilator Claim Authorisation</title>
     </head>
@@ -17,7 +18,7 @@
                 onerror="this.style.display='none'"
             />
             <div class="portal-nav-links">
-                <a href="./login.html" class="portal-nav-btn">TimeSheet</a>
+                <a href="./index.html" class="portal-nav-btn">TimeSheet</a>
                 <a href="./approve.html" class="portal-nav-btn active">Head of Exams Authorisation</a>
             </div>
         </div>
@@ -34,7 +35,37 @@
             <!-- LOCK SCREEN -->
             <div id="lockScreen" class="lock-box">
                 <h3>Head of Exams Sign-In</h3>
-                <p>Enter your name and authorisation passcode to view and approve invigilator claims.</p>
+                <p>Sign in with an authorised <strong>@uptonhigh.co.uk</strong> Google account or enter your passcode.</p>
+
+                <!-- Option 1: Sign in with Google -->
+                <div class="login-body" style="margin: 14px 0;">
+                    <div
+                        id="g_id_onload"
+                        data-client_id="262571534947-a44trilovefr7iipftf20v6fqdjri5t0.apps.googleusercontent.com"
+                        data-context="signin"
+                        data-ux_mode="popup"
+                        data-callback="handleExamsGoogleSignIn"
+                        data-auto_prompt="false">
+                    </div>
+                    <div class="google-wrap" style="display: flex; justify-content: center;">
+                        <div
+                            class="g_id_signin"
+                            data-type="standard"
+                            data-shape="rectangular"
+                            data-theme="outline"
+                            data-text="signin_with"
+                            data-size="large"
+                            data-logo_alignment="left"
+                            data-width="320">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align: center; color: #6b7280; font-size: 0.85rem; margin: 12px 0;">
+                    — or use Exams Office passcode —
+                </div>
+
+                <!-- Option 2: Passcode Fallback -->
                 <input
                     type="text"
                     id="managerName"
@@ -269,35 +300,24 @@
                 <!-- TAB 4: INVIGILATOR LIST MANAGER -->
                 <div id="peopleView" style="display: none;">
                     <div class="section-box">
-                        <h3>Add Invigilator &amp; Generate Portal Login</h3>
+                        <h3>Add Invigilator to Claim Form Drop-Down</h3>
                         <div style="display: flex; flex-wrap: wrap; gap: 10px;">
                             <input
                                 type="text"
                                 id="newPersonName"
                                 placeholder="Full Name (e.g. Jane Doe)"
-                                style="flex: 1; min-width: 190px; background: #fff;"
-                                onkeydown="if(event.key==='Enter') document.getElementById('newPersonEmail').focus()"
-                            />
-                            <input
-                                type="email"
-                                id="newPersonEmail"
-                                placeholder="School Email (e.g. j.doe@uptonhigh.co.uk)"
-                                style="flex: 1; min-width: 230px; background: #fff;"
+                                style="flex: 1; min-width: 220px; background: #fff;"
                                 onkeydown="if(event.key==='Enter') addPerson()"
                             />
                             <button type="button" class="export-btn" id="addPersonBtn" onclick="addPerson()">
-                                Add Person &amp; Generate Password
+                                Add Person
                             </button>
                         </div>
                         <div id="peopleStatusMsg" style="margin-top: 10px; font-weight: 700; font-size: 13.5px;"></div>
-                        <div
-                            id="generatedCredsBox"
-                            style="display: none; margin-top: 12px; padding: 12px 14px; background: #f0fdf4; border: 1px solid #86efac; color: #166534; border-radius: 6px; font-size: 13.5px; line-height: 1.5;"
-                        ></div>
                     </div>
 
                     <div class="section-box">
-                        <h3 id="peopleHeading">Invigilators on the Portal</h3>
+                        <h3 id="peopleHeading">Invigilators on the Form</h3>
                         <div id="peopleList"></div>
                     </div>
                 </div>
