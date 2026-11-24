@@ -1,13 +1,19 @@
-function callGas(fn, args = []) {
-  return new Promise((resolve, reject) => {
-    if (!window.google || !google.script || !google.script.run) {
-      reject(new Error('api.js did not load (google.script.run is missing). Check <script src="./api.js"> in approve.html.'));
-      return;
-    }
-    google.script.run
-      .withSuccessHandler(resolve)
-      .withFailureHandler(reject)[fn](...args);
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwOrMEX19gFv0YkVnKnimA9lV3B4iFuy9hIFgaS7eCvxyLTD4LAFzzGmktGe7qsbqo-DA/exec';
+
+async function callGas(fn, args = []) {
+  const res = await fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ fn: fn, args: args })
   });
+  if (!res.ok) {
+    throw new Error('Network error (' + res.status + ') contacting Apps Script.');
+  }
+  const data = await res.json();
+  if (!data.ok) {
+    throw new Error(data.error || ('Error running ' + fn));
+  }
+  return data.result;
 }
 
 let activeAuthToken = ''; // Holds either Google ID token or shared EXAMS_PASSCODE
