@@ -311,28 +311,21 @@
                 </div>
 
                 <!-- TAB 4: INVIGILATOR LIST MANAGER -->
-                <div id="peopleView" style="display: none;">
-                    <div class="section-box">
-                        <h3>Add Invigilator to Claim Form Drop-Down</h3>
-                        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                            <input
-                                type="text"
-                                id="newPersonName"
-                                placeholder="Full Name (e.g. Jane Doe)"
-                                style="flex: 1; min-width: 220px; background: #fff;"
-                                onkeydown="if(event.key==='Enter') addPerson()"
-                            />
-                            <button type="button" class="export-btn" id="addPersonBtn" onclick="addPerson()">
-                                Add Person
-                            </button>
-                        </div>
-                        <div id="peopleStatusMsg" style="margin-top: 10px; font-weight: 700; font-size: 13.5px;"></div>
-                    </div>
+               <div id="peopleView" style="display:none;">
+  <h3>Manage Invigilators</h3>
+  <p style="color:#6b7280; font-size:13px; margin-bottom:12px;">
+    Enter the invigilator's full name and school email. A portal password (two colours + 3 numbers) will be generated automatically.
+  </p>
 
-                    <div class="section-box">
-                        <h3 id="peopleHeading">Invigilators on the Form</h3>
-                        <div id="peopleList"></div>
-                    </div>
+  <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+    <input type="text" id="newPersonName" placeholder="Full Name (e.g. Jane Smith)" style="flex:1; min-width:180px;">
+    <input type="email" id="newPersonEmail" placeholder="School Email (e.g. j.smith@uptonhigh.co.uk)" style="flex:1; min-width:220px;">
+    <button type="button" class="bulk-btn" onclick="addPerson()">Add &amp; Generate Password</button>
+  </div>
+
+  <div id="peopleStatusMsg" style="font-size:13px; font-weight:600; margin-bottom:12px;"></div>
+  <div id="peopleList"></div>
+</div>
                 </div>
             </div>
         </div>
