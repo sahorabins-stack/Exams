@@ -7,6 +7,7 @@ function setLoginStatus(msg, isError) {
   const el = document.getElementById('loginErr');
   if (!el) return;
   el.textContent = msg || '';
+  el.style.display = msg ? 'block' : 'none';
   el.style.color = isError ? '#b91c1c' : '#0d2d6c';
 }
 
@@ -45,8 +46,8 @@ function showPortal(authToken, managerName, claims) {
   }, 600);
 }
 
-// Google Sign-In Callback (matched to data-callback="handleExamsGoogleSignIn" in approve.html)
-window.handleExamsGoogleSignIn = async function(response) {
+// Google Sign-In Callback
+window.handleExamsGoogleSignIn = window.handleGoogleSignIn = async function(response) {
   if (!response || !response.credential) {
     setLoginStatus('Google sign-in did not return a credential.', true);
     return;
@@ -54,13 +55,48 @@ window.handleExamsGoogleSignIn = async function(response) {
 
   setLoginStatus('Verifying authorised Google account...', false);
   try {
+    if (typeof callGas !== 'function') {
+      throw new Error('api.js did not load (callGas is undefined). Check the <script src="./api.js"> path.');
+    }
     const res = await callGas('loginExamsManagerWithGoogle', [response.credential]);
     setLoginStatus('', false);
     showPortal(response.credential, res.name || res.email, res.claims);
   } catch (err) {
+    console.error('Google Sign-In error:', err);
     setLoginStatus(err && err.message ? err.message : 'Access denied.', true);
   }
 };
+
+// Explicitly initialize & render the Google button once GIS loads
+function initExamsGoogleButton() {
+  const wrap = document.querySelector('.google-wrap');
+  const onloadEl = document.getElementById('g_id_onload');
+  if (!wrap || !onloadEl) return;
+
+  const clientId = onloadEl.getAttribute('data-client_id');
+  if (!clientId) return;
+
+  if (window.google && google.accounts && google.accounts.id) {
+    google.accounts.id.initialize({
+      client_id: clientId,
+      callback: window.handleExamsGoogleSignIn,
+      ux_mode: 'popup',
+      auto_select: false
+    });
+    wrap.innerHTML = '';
+    google.accounts.id.renderButton(wrap, {
+      type: 'standard',
+      shape: 'rectangular',
+      theme: 'outline',
+      text: 'signin_with',
+      size: 'large',
+      logo_alignment: 'left',
+      width: 320
+    });
+  } else {
+    setTimeout(initExamsGoogleButton, 150);
+  }
+}
 
 // Passcode Fallback Unlock (called by onclick="unlockPortal()" in approve.html)
 window.unlockPortal = async function() {
@@ -74,6 +110,9 @@ window.unlockPortal = async function() {
 
   setLoginStatus('Checking passcode...', false);
   try {
+    if (typeof callGas !== 'function') {
+      throw new Error('api.js did not load (callGas is undefined).');
+    }
     const claims = await callGas('verifyExamsAccess', [passVal]);
     setLoginStatus('', false);
     showPortal(passVal, nameVal, claims);
@@ -203,9 +242,9 @@ window.renderTable = function() {
         <td><strong>${escapeHtml(c.dailyTotal)}</strong></td>
         <td style="color:${isApproved ? '#15803d' : '#b45309'}; font-weight:700;">${escapeHtml(c.status)}</td>
         <td style="white-space:nowrap;">
-          ${!isApproved ? `<button type="button" class="bulk-btn" style="padding:5px 10px; font-size:12px;" onclick="approveSingleRow(${c.rowNumber})">Approve</button>` : ''}
-          <button type="button" class="edit-btn" style="padding:5px 10px; font-size:12px;" onclick="openEditModal(${c.rowNumber})">Edit</button>
-          <button type="button" class="cancel-btn" style="padding:5px 10px; font-size:12px;" onclick="deleteSingleRow(${c.rowNumber})">Delete</button>
+          ${!isApproved ? `<button type="button" class="approve-btn" onclick="approveSingleRow(${c.rowNumber})">Approve</button>` : ''}
+          <button type="button" class="edit-btn" onclick="openEditModal(${c.rowNumber})">Edit</button>
+          <button type="button" class="delete-btn" onclick="deleteSingleRow(${c.rowNumber})">Delete</button>
         </td>
       </tr>
     `;
@@ -494,7 +533,7 @@ async function loadSchedulesList() {
       return `
         <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #e5e7eb;">
           <span><strong>${escapeHtml(s.period)}</strong> — ${escapeHtml(s.role)} (W/C ${escapeHtml(s.week)})</span>
-          <button type="button" class="cancel-btn" style="padding:4px 10px; font-size:12px;"
+          <button type="button" class="delete-btn"
             onclick="deleteCustomWeek('${escapeHtml(s.role).replace(/'/g, "\\'")}', '${escapeHtml(s.period).replace(/'/g, "\\'")}', '${escapeHtml(s.week).replace(/'/g, "\\'")}')">
             Delete
           </button>
@@ -525,7 +564,7 @@ async function loadPeopleList() {
     container.innerHTML = names.map(n => `
       <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #e5e7eb;">
         <span>${escapeHtml(n)}</span>
-        <button type="button" class="cancel-btn" style="padding:4px 10px; font-size:12px;"
+        <button type="button" class="delete-btn"
           onclick="removePerson('${escapeHtml(n).replace(/'/g, "\\'")}')">Remove</button>
       </div>
     `).join('');
@@ -571,8 +610,10 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-// Restore saved session on page load
+// Initialize Google button & restore saved session on page load
 window.addEventListener('DOMContentLoaded', async function() {
+  initExamsGoogleButton();
+
   const saved = sessionStorage.getItem('upton_exams_auth');
   if (!saved) return;
   try {

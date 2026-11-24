@@ -7,9 +7,6 @@
         <script src="https://accounts.google.com/gsi/client" async defer></script>
         <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
         <title>Invigilator Claim Authorisation</title>
-        <style>
-           
-        </style>
     </head>
     <body>
         <!-- PORTAL NAVIGATION BAR -->
@@ -25,21 +22,17 @@
                 <a href="./approve.html" class="portal-nav-btn active">Head of Exams Authorisation</a>
             </div>
         </div>
-        <div class="card">
-            <div class="card-header">
-                <div>
-                    <div class="school-tag">Upton-by-Chester High School</div>
-                    <h2>Invigilator Claim Authorisation</h2>
-                    <p>Authorise pending claims, inspect time sheets, or add new exam schedules.</p>
-                </div>
+
+        <!-- LOCK SCREEN CARD -->
+        <div id="lockScreen" class="auth-card">
+            <div class="auth-card-header">
+                <div class="school-tag">Upton-by-Chester High School</div>
+                <h2>Head of Exams Sign-In</h2>
+                <p>Sign in with your authorised Google account or Exams passcode.</p>
             </div>
 
-            <!-- LOCK SCREEN (Styled like login.html) -->
-            <div id="lockScreen" class="lock-box">
-                <h3>Head of Exams Sign-In</h3>
-                <p>Sign in with your authorised <strong>@uptonhigh.co.uk</strong> Google account to manage claims.</p>
-
-                <!-- Primary: Sign in with Google -->
+            <div class="auth-card-body">
+                <!-- Option 1: Sign in with Google -->
                 <div
                     id="g_id_onload"
                     data-client_id="262571534947-a44trilovefr7iipftf20v6fqdjri5t0.apps.googleusercontent.com"
@@ -61,28 +54,45 @@
                     </div>
                 </div>
 
-                <div class="login-divider">or sign in with Exams Office passcode</div>
+                <div class="login-divider">or sign in with exams passcode</div>
 
-                <!-- Fallback: Passcode Sign-In -->
-                <div class="passcode-fields">
+                <!-- Option 2: Passcode Fallback -->
+                <div class="auth-field">
+                    <label for="managerName">Your Full Name</label>
                     <input
                         type="text"
                         id="managerName"
-                        placeholder="Your Full Name (e.g. Head of Exams)"
+                        placeholder="e.g. Head of Exams"
                         onkeydown="if(event.key==='Enter') document.getElementById('passcodeInput').focus()"
                     />
+                </div>
+
+                <div class="auth-field">
+                    <label for="passcodeInput">Exams Passcode</label>
                     <input
                         type="password"
                         id="passcodeInput"
                         placeholder="Enter Exams Passcode"
                         onkeydown="if(event.key==='Enter') unlockPortal()"
                     />
-                    <button type="button" class="primary-btn" id="unlockBtn" onclick="unlockPortal()">
-                        Unlock Approval Portal
-                    </button>
                 </div>
 
+                <button type="button" class="auth-submit-btn" id="unlockBtn" onclick="unlockPortal()">
+                    Unlock Approval Portal
+                </button>
+
                 <div class="err-msg" id="loginErr"></div>
+            </div>
+        </div>
+
+        <!-- MAIN PORTAL CARD -->
+        <div id="mainPortalCard" class="card" style="display: none;">
+            <div class="card-header">
+                <div>
+                    <div class="school-tag">Upton-by-Chester High School</div>
+                    <h2>Invigilator Claim Authorisation</h2>
+                    <p>Authorise pending claims, inspect time sheets, or add new exam schedules.</p>
+                </div>
             </div>
 
             <!-- WELCOME SPLASH -->
