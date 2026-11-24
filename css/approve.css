@@ -976,3 +976,61 @@
 .auth-divider:not(:empty)::after {
   margin-left: 10px;
 }
+ .lock-box {
+                max-width: 420px;
+                margin: 28px auto;
+                text-align: center;
+            }
+            .lock-box h3 {
+                margin-bottom: 6px;
+            }
+            .lock-box p {
+                margin-bottom: 18px;
+                color: #4b5563;
+                font-size: 0.92rem;
+            }
+            .google-wrap {
+                display: flex;
+                justify-content: center;
+                margin: 12px 0 4px;
+            }
+            .login-divider {
+                display: flex;
+                align-items: center;
+                text-align: center;
+                color: #6b7280;
+                font-size: 0.82rem;
+                margin: 18px 0;
+            }
+            .login-divider::before,
+            .login-divider::after {
+                content: '';
+                flex: 1;
+                border-bottom: 1px solid #d1d5db;
+            }
+            .login-divider:not(:empty)::before {
+                margin-right: 12px;
+            }
+            .login-divider:not(:empty)::after {
+                margin-left: 12px;
+            }
+            .passcode-fields {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                text-align: left;
+            }
+            .passcode-fields input {
+                width: 100%;
+                box-sizing: border-box;
+            }
+            .passcode-fields .primary-btn {
+                width: 100%;
+                margin-top: 4px;
+            }
+            .err-msg {
+                margin-top: 12px;
+                min-height: 1.2em;
+                font-weight: 600;
+                font-size: 0.9rem;
+            }
