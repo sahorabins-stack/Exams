@@ -3,6 +3,14 @@
   // Paste your Apps Script Web App URL here (it ends in /exec).
   var API_URL = 'https://script.google.com/macros/s/AKfycbwOrMEX19gFv0YkVnKnimA9lV3B4iFuy9hIFgaS7eCvxyLTD4LAFzzGmktGe7qsbqo-DA/exec';
 
+function callGas(fn, args = []) {
+  return new Promise((resolve, reject) => {
+    google.script.run
+      .withSuccessHandler(resolve)
+      .withFailureHandler(reject)[fn](...args);
+  });
+}
+
   function call(fn, args) {
     return fetch(API_URL, {
       method: 'POST',
