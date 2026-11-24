@@ -1,3 +1,15 @@
+function callGas(fn, args = []) {
+  return new Promise((resolve, reject) => {
+    if (!window.google || !google.script || !google.script.run) {
+      reject(new Error('api.js did not load (google.script.run is missing). Check <script src="./api.js"> in approve.html.'));
+      return;
+    }
+    google.script.run
+      .withSuccessHandler(resolve)
+      .withFailureHandler(reject)[fn](...args);
+  });
+}
+
 let activeAuthToken = ''; // Holds either Google ID token or shared EXAMS_PASSCODE
 let activeManagerName = 'Head of Exams';
 let allClaimsCache = [];
@@ -55,9 +67,6 @@ window.handleExamsGoogleSignIn = window.handleGoogleSignIn = async function(resp
 
   setLoginStatus('Verifying authorised Google account...', false);
   try {
-    if (typeof callGas !== 'function') {
-      throw new Error('api.js did not load (callGas is undefined). Check the <script src="./api.js"> path.');
-    }
     const res = await callGas('loginExamsManagerWithGoogle', [response.credential]);
     setLoginStatus('', false);
     showPortal(response.credential, res.name || res.email, res.claims);
@@ -110,9 +119,6 @@ window.unlockPortal = async function() {
 
   setLoginStatus('Checking passcode...', false);
   try {
-    if (typeof callGas !== 'function') {
-      throw new Error('api.js did not load (callGas is undefined).');
-    }
     const claims = await callGas('verifyExamsAccess', [passVal]);
     setLoginStatus('', false);
     showPortal(passVal, nameVal, claims);
