@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invigilator Time Sheet</title>
+  <link rel="stylesheet" href="./css/index.css">
+</head>
+<body>
+
+  <!-- PORTAL NAVIGATION BAR -->
+  <div class="portal-nav-strip">
+    <img
+      src="./img/UBC Logo.png"
+      alt="School Crest"
+      class="school-logo"
+      onerror="this.style.display='none'"/>
+    <div class="portal-nav-links">
+      <a href="./login.html" class="portal-nav-btn active">TimeSheet</a>
+      <a href="./approve.html" class="portal-nav-btn">Head of Exams Authorisation</a>
+    </div>
+  </div>
+
+    <div class="form-body">
+      <div class="role-tabs">
+        <button type="button" class="role-tab active" id="tabSupportingBtn" onclick="selectRole('Supporting Invigilator')">Supporting Invigilator</button>
+        <button type="button" class="role-tab" id="tabLeadBtn" onclick="selectRole('Lead Invigilator')">Lead Invigilator</button>
+      </div>
+
+      <form id="timeSheetForm">
+        <div class="top-grid">
+          <div>
+            <label for="invigilatorName">Invigilator Full Name *</label>
+            <div class="name-row">
+              <input type="text" id="invigilatorName" readonly style="background: #f1f5f9; font-weight: 700; color: #0D2D6C;" required />
+              <button type="button" class="load-btn" id="loadBtn" onclick="manualLoadDraft()">Load Saved</button>
+              <button type="button" class="load-btn" onclick="signOutUser()" style="background: #fff; color: #0D2D6C; border: 1px solid #cbd5e1;">Sign Out</button>
+            </div>
+            <div class="name-hint" id="loggedInEmailHint">Signed in to your personal time sheet.</div>
+          </div>
+          <div>
+            <label for="examPeriod">Exam Period *</label>
+            <select id="examPeriod" onchange="onPeriodChange()" required>
+              <option value="">Loading schedule...</option>
+            </select>
+          </div>
+          <div>
+            <label for="weekCommencing">Week Commencing *</label>
+            <select id="weekCommencing" onchange="renderScheduleRows()" required>
+              <option value="">Select week...</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th rowspan="2">Exam Session Day</th>
+                <th colspan="2">Morning Session (AM)</th>
+                <th colspan="2">Afternoon Session (PM)</th>
+                <th colspan="2">Agreed ET / RB (Mins)</th>
+                <th rowspan="2">Day Total</th>
+              </tr>
+              <tr>
+                <th>Worked</th>
+                <th>Session Times</th>
+                <th>Worked</th>
+                <th>Session Times</th>
+                <th>AM Mins</th>
+                <th>PM Mins</th>
+              </tr>
+            </thead>
+            <tbody id="scheduleBody">
+              <tr><td colspan="8" style="text-align:center;padding:18px;">Loading exam sessions...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="total-banner">
+          <div class="draft-note" id="draftStatus">Auto-saving locally in browser</div>
+          <div>
+            <span class="total-label">This Week's Hours:</span>
+            <span class="total-value" id="grandTotal">0:00</span>
+          </div>
+        </div>
+
+        <!-- Every week ticked so far; all of them are sent when you press Submit -->
+        <div class="weeks-box" id="weeksBox">
+          <div class="weeks-title">Weeks included in this submission</div>
+          <div id="weeksList"></div>
+          <div class="weeks-total"><span>Total hours claimed (all weeks)</span><strong id="allWeeksTotal">0:00</strong></div>
+          <div class="weeks-hint">Change the week above to add another. Everything you tick is kept and sent together when you press Submit.</div>
+        </div>
+
+        <div class="cert-box">
+          <div class="cert-title">I certify that I have worked the hours claimed above:</div>
+          <div class="cert-grid">
+            <div>
+              <label for="signature">Digital Signature (Type Full Name) *</label>
+              <input type="text" id="signature" placeholder="Type full name to sign" oninput="saveLocalDraft()" required>
+            </div>
+            <div>
+              <label for="claimDate">Date *</label>
+              <input type="date" id="claimDate" onchange="saveLocalDraft()" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" class="save-btn" id="saveDraftBtn" onclick="saveCloudDraft()">Save Progress</button>
+          <button type="submit" class="submit-btn" id="submitBtn">Submit Final Time Sheet</button>
+        </div>
+        <div id="statusMsg" class="status"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- "Submitted" animation overlay -->
+  <div class="submit-overlay" id="submitOverlay" role="dialog" aria-modal="true" aria-labelledby="submitTitle" onclick="if (event.target === this) closeSubmitted()">
+    <div class="submit-modal">
+      <svg class="tick" viewBox="0 0 56 56" aria-hidden="true">
+        <circle cx="28" cy="28" r="26" />
+        <path d="M16 29 l8 8 l16 -17" />
+      </svg>
+      <h3 id="submitTitle">Time Sheet Submitted</h3>
+      <p id="submitMsg">Thank you. Your time sheet has been sent for authorisation.</p>
+      <button type="button" id="submitDoneBtn" onclick="closeSubmitted()">Done</button>
+    </div>
+  </div>
+
+  <!-- Replaces google.script.run with fetch calls to the Apps Script web app -->
+  <script src="./api.js"></script>
+  <script src="./js/index.js"></script>
+ 
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invigilator Portal Sign-In</title>
+  <link rel="stylesheet" href="./css/index.css" />
+  <!-- Google Identity Services library -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <div class="portal-nav-strip">
+    <img src="./img/UBC Logo.png" alt="School Crest" class="school-logo" onerror="this.style.display='none'" />
+    <div class="portal-nav-links">
+      <a href="./login.html" class="portal-nav-btn active">TimeSheet</a>
+      <a href="./approve.html" class="portal-nav-btn">Head of Exams Authorisation</a>
+    </div>
+  </div>
+
+  <div class="login-card">
+    <div class="login-banner">
+      <div class="school">UPTON-BY-CHESTER HIGH SCHOOL</div>
+      <h1>Invigilator Portal Sign-In</h1>
+      <p>Sign in with your school Google account or portal password.</p>
+    </div>
+
+    <div class="login-body">
+      <!-- Option 1: Sign in with Google -->
+      <div id="g_id_onload"
+           data-client_id="262571534947-a44trilovefr7iipftf20v6fqdjri5t0.apps.googleusercontent.com"
+           data-context="signin"
+           data-ux_mode="popup"
+           data-callback="handleGoogleSignIn"
+           data-auto_prompt="false">
+      </div>
+      <div class="google-wrap">
+        <div class="g_id_signin"
+             data-type="standard"
+             data-shape="rectangular"
+             data-theme="outline"
+             data-text="signin_with"
+             data-size="large"
+             data-logo_alignment="left"
+             data-width="320">
+        </div>
+      </div>
+
+      <div class="divider">OR SIGN IN WITH PORTAL PASSWORD</div>
+
+      <!-- Option 2: Email + Portal Password Fallback -->
+      <form id="passwordLoginForm">
+        <div class="field">
+          <label for="loginEmail">School Email Address</label>
+          <input type="email" id="loginEmail" placeholder="e.g. j.smith@uptonhigh.co.uk" required />
+        </div>
+        <div class="field">
+          <label for="loginPassword">Portal Password</label>
+          <input type="password" id="loginPassword" placeholder="Enter your portal password" required />
+        </div>
+        <button type="submit" class="signin-btn" id="passwordSignInBtn">Sign In with Password</button>
+      </form>
+
+      <div id="loginStatus" class="login-status"></div>
+    </div>
+  </div>
+
+  <script src="./api.js"></script>
+  <script>
+    if (sessionStorage.getItem("ubc_invig_session")) {
+      window.location.href = "./index.html";
+    }
+
+    function showStatus(msg, isError) {
+      const box = document.getElementById("loginStatus");
+      box.textContent = msg;
+      box.className = "login-status " + (isError ? "err" : "info");
+      box.style.display = "block";
+    }
+
+    // 1. Google Sign-In Callback
+    function handleGoogleSignIn(response) {
+      if (!response || !response.credential) {
+        showStatus("Google sign-in did not return a valid token.", true);
+        return;
+      }
+      showStatus("Verifying your Google account...", false);
+
+      google.script.run
+        .withSuccessHandler(function(user) {
+          sessionStorage.setItem("ubc_invig_session", JSON.stringify({
+            name: user.name,
+            email: user.email,
+            authType: "google",
+            credential: response.credential
+          }));
+          window.location.href = "./index.html";
+        })
+        .withFailureHandler(function(err) {
+          showStatus(err.message || "Google sign-in failed.", true);
+        })
+        .loginWithGoogle(response.credential);
+    }
+
+    // 2. Password Fallback Submit
+    document.getElementById("passwordLoginForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const email = document.getElementById("loginEmail").value.trim().toLowerCase();
+      const password = document.getElementById("loginPassword").value.trim();
+      const btn = document.getElementById("passwordSignInBtn");
+
+      btn.disabled = true;
+      btn.textContent = "Signing in...";
+      showStatus("Checking your credentials...", false);
+
+      google.script.run
+        .withSuccessHandler(function(user) {
+          sessionStorage.setItem("ubc_invig_session", JSON.stringify({
+            name: user.name,
+            email: user.email,
+            authType: "password",
+            password: password
+          }));
+          window.location.href = "./index.html";
+        })
+        .withFailureHandler(function(err) {
+          btn.disabled = false;
+          btn.textContent = "Sign In with Password";
+          showStatus(err.message || "Invalid email or password.", true);
+        })
+        .loginInvigilator(email, password);
+    });
+  </script>
+</body>
+</html>
