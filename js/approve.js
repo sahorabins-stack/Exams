@@ -428,6 +428,8 @@ function populateDatalists() {
 
   const periodList = document.getElementById('periodOptionsList');
   if (periodList) periodList.innerHTML = periods.map(p => `<option value="${escapeHtml(p)}"></option>`).join('');
+
+  populateAllExportFilters();
 }
 
 // ---------- Month filter helpers for the Individual Time Sheet ----------
@@ -801,6 +803,376 @@ window.exportIndividualTimesheet = async function() {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `${name.replace(/\s+/g, '_')}${month ? '_' + month : ''}_Timesheet.xlsx`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+
+// ---------- Export ALL invigilators to ONE Excel sheet (for Finance to print) ----------
+
+const XL_DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'];
+const XL_SAGE = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFA9C49A' } };
+const XL_NAVY = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D2D6C' } };
+const XL_GREY = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+const XL_BORDER = {
+  top: { style: 'thin', color: { argb: 'FF000000' } },
+  left: { style: 'thin', color: { argb: 'FF000000' } },
+  bottom: { style: 'thin', color: { argb: 'FF000000' } },
+  right: { style: 'thin', color: { argb: 'FF000000' } }
+};
+const XL_BODY_FONT = { name: 'Arial', size: 10, bold: false };
+const XL_BOLD_FONT = { name: 'Arial', size: 10, bold: true };
+
+// "[Lead] PPE" and "[Supporting] PPE" are both the exam period "PPE".
+function basePeriodName(p) {
+  return String(p || '').replace(/^\[(Lead|Supporting)\]\s*/i, '').trim();
+}
+
+// Week-commencing text -> a sortable number (so 16/11/26 and 16/11/2026 sort and group together).
+function weekSortValue(label) {
+  const d = claimDayDate({ weekCommencing: label, day: 'MONDAY' });
+  return d ? d.getTime() : 0;
+}
+
+// Fills the Exam Period drop-down, then the Month drop-down for that period.
+function populateAllExportFilters() {
+  const periodSel = document.getElementById('allExportPeriod');
+  if (!periodSel) return;
+  const previous = periodSel.value;
+  const periods = [...new Set(allClaimsCache.map(c => basePeriodName(c.examPeriod)).filter(Boolean))].sort();
+  periodSel.innerHTML = '<option value="">All Exam Periods</option>' +
+    periods.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+  periodSel.value = periods.includes(previous) ? previous : '';
+  refreshAllExportMonths();
+}
+
+// Months offered = only months that have claims in the chosen exam period.
+function refreshAllExportMonths() {
+  const periodSel = document.getElementById('allExportPeriod');
+  const monthSel = document.getElementById('allExportMonth');
+  if (!periodSel || !monthSel) return;
+  const previous = monthSel.value;
+  const period = periodSel.value;
+  const pool = period ? allClaimsCache.filter(c => basePeriodName(c.examPeriod) === period) : allClaimsCache;
+  const keys = [...new Set(pool.map(claimDayDate).filter(Boolean).map(monthKey))].sort();
+  monthSel.innerHTML = '<option value="">All Months</option>' +
+    keys.map(k => `<option value="${k}">${escapeHtml(monthLabel(k))}</option>`).join('');
+  monthSel.value = keys.includes(previous) ? previous : '';
+}
+
+// One Mon-Fri row. Used for real claims and for empty days.
+function xlWriteDayRow(ws, rowIdx, label, claim) {
+  const r = ws.getRow(rowIdx);
+  r.height = 19;
+
+  const amWorked = claim && claim.amWorked === 'Yes';
+  const pmWorked = claim && claim.pmWorked === 'Yes';
+  const amExtraMins = claim ? Number(claim.amExtra || 0) : 0;
+  const pmExtraMins = claim ? Number(claim.pmExtra || 0) : 0;
+
+  r.getCell(1).value = label;
+  r.getCell(2).value = amWorked ? (claim.amStart || '') : '';
+  r.getCell(3).value = amWorked ? (claim.amFinish || '') : '';
+  r.getCell(4).value = amWorked ? '☑' : '☐';
+  r.getCell(5).value = pmWorked ? (claim.pmStart || '') : '';
+  r.getCell(6).value = pmWorked ? (claim.pmFinish || '') : '';
+  r.getCell(7).value = pmWorked ? '☑' : '☐';
+  r.getCell(8).value = amExtraMins > 0 ? formatMins(amExtraMins) : '';
+  r.getCell(9).value = '';
+  r.getCell(10).value = pmExtraMins > 0 ? formatMins(pmExtraMins) : '';
+
+  for (let col = 1; col <= 10; col++) {
+    const cell = r.getCell(col);
+    cell.font = XL_BODY_FONT;
+    cell.border = XL_BORDER;
+    if (col === 9) cell.fill = XL_SAGE;
+    else if (col === 1) cell.alignment = { horizontal: 'left', vertical: 'middle' };
+    else cell.alignment = { horizontal: 'center', vertical: 'middle' };
+  }
+}
+
+// One week table (header, WEEK COM row, Mon-Fri, green divider). Returns the next free row and the week's minutes.
+function xlWriteWeekBlock(ws, startRow, weekLabel, weekClaims) {
+  let row = startRow;
+  let mins = 0;
+
+  const hdrRow = ws.getRow(row);
+  hdrRow.height = 30;
+  ws.mergeCells(`H${row}:J${row}`);
+  const headers = {
+    1: 'EXAM SESSIONS',
+    2: 'AM START\nINC SET UP',
+    3: 'AM FINISH\nINC PACK UP/SET UP',
+    4: 'SESSIONS WORKED',
+    5: 'PM START\nINC SET UP',
+    6: 'PM FINISH\nINC PACK UP/SET UP',
+    7: 'SESSIONS WORKED',
+    8: 'ADDITIONAL HOURS AGREED WITH EXAM TEAM DUE TO ET / RB'
+  };
+  for (let col = 1; col <= 10; col++) {
+    const cell = hdrRow.getCell(col);
+    if (headers[col]) cell.value = headers[col];
+    cell.font = XL_BOLD_FONT;
+    cell.border = XL_BORDER;
+    cell.alignment = { vertical: 'bottom', horizontal: col === 1 ? 'left' : 'center', wrapText: true };
+  }
+  row++;
+
+  const subRow = ws.getRow(row);
+  subRow.height = 20;
+  subRow.getCell(1).value = `WEEK COM ${weekLabel}`;
+  subRow.getCell(1).font = XL_BODY_FONT;
+  subRow.getCell(1).border = XL_BORDER;
+  subRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'left' };
+  for (let col = 2; col <= 7; col++) {
+    subRow.getCell(col).fill = XL_SAGE;
+    subRow.getCell(col).border = XL_BORDER;
+  }
+  subRow.getCell(8).value = 'AM';
+  subRow.getCell(8).font = XL_BODY_FONT;
+  subRow.getCell(8).border = XL_BORDER;
+  subRow.getCell(8).alignment = { vertical: 'middle', horizontal: 'left' };
+  subRow.getCell(9).fill = XL_SAGE;
+  subRow.getCell(9).border = XL_BORDER;
+  subRow.getCell(10).value = 'PM';
+  subRow.getCell(10).font = XL_BODY_FONT;
+  subRow.getCell(10).border = XL_BORDER;
+  subRow.getCell(10).alignment = { vertical: 'middle', horizontal: 'left' };
+  row++;
+
+  // Mon-Fri. If someone has two claims for the same day, both are shown so no hours are hidden.
+  XL_DAYS.forEach(dayName => {
+    const matches = weekClaims.filter(c => String(c.day || '').trim().toUpperCase() === dayName);
+    if (!matches.length) {
+      xlWriteDayRow(ws, row++, dayName, null);
+      return;
+    }
+    matches.forEach((m, i) => {
+      xlWriteDayRow(ws, row++, i === 0 ? dayName : `${dayName} (${i + 1})`, m);
+      mins += parseHoursToMins(m.dailyTotal);
+    });
+  });
+
+  // Anything not Mon-Fri (e.g. a Saturday session) is still listed.
+  weekClaims
+    .filter(c => !XL_DAYS.includes(String(c.day || '').trim().toUpperCase()))
+    .forEach(c => {
+      xlWriteDayRow(ws, row++, String(c.day || '').toUpperCase(), c);
+      mins += parseHoursToMins(c.dailyTotal);
+    });
+
+  const sepRow = ws.getRow(row);
+  sepRow.height = 14;
+  for (let col = 1; col <= 10; col++) {
+    sepRow.getCell(col).fill = XL_SAGE;
+    sepRow.getCell(col).border = XL_BORDER;
+  }
+  row++;
+
+  return { nextRow: row, mins: mins };
+}
+
+window.exportAllTimesheets = async function() {
+  const period = document.getElementById('allExportPeriod').value;
+  const month = document.getElementById('allExportMonth').value;
+  const approvedOnly = document.getElementById('allExportStatus').value === 'Approved';
+
+  const claims = allClaimsCache.filter(c => {
+    if (period && basePeriodName(c.examPeriod) !== period) return false;
+    if (approvedOnly && !String(c.status || '').toLowerCase().startsWith('approved')) return false;
+    if (month) {
+      const d = claimDayDate(c);
+      if (!d || monthKey(d) !== month) return false;
+    }
+    return true;
+  });
+
+  if (!claims.length) {
+    alert('No ' + (approvedOnly ? 'approved ' : '') + 'claims match those filters.');
+    return;
+  }
+
+  // invigilator -> exam period -> week
+  const people = new Map();
+  claims.forEach(c => {
+    const name = String(c.invigilatorName || 'Unknown').trim();
+    const pKey = name.toLowerCase();
+    if (!people.has(pKey)) people.set(pKey, { name: name, periods: new Map(), mins: 0 });
+    const person = people.get(pKey);
+    person.mins += parseHoursToMins(c.dailyTotal);
+
+    const examPeriod = String(c.examPeriod || '').trim() || 'Exam Period';
+    if (!person.periods.has(examPeriod)) person.periods.set(examPeriod, new Map());
+    const weeks = person.periods.get(examPeriod);
+
+    const label = String(c.weekCommencing || 'TBC').trim();
+    const wKey = weekSortValue(label) || label;
+    if (!weeks.has(wKey)) weeks.set(wKey, { label: label, claims: [] });
+    weeks.get(wKey).claims.push(c);
+  });
+
+  const sortedPeople = [...people.values()].sort((a, b) => a.name.localeCompare(b.name));
+  const grandMins = sortedPeople.reduce((t, p) => t + p.mins, 0);
+
+  const workbook = new ExcelJS.Workbook();
+  const ws = workbook.addWorksheet('All Timesheets', { views: [{ showGridLines: true }] });
+
+  ws.columns = [
+    { width: 22 }, { width: 16 }, { width: 22 }, { width: 18 }, { width: 16 },
+    { width: 22 }, { width: 18 }, { width: 22 }, { width: 10 }, { width: 22 }
+  ];
+
+  // Print setup: A4 landscape, one page wide, page numbers in the footer.
+  ws.pageSetup = {
+    paperSize: 9,
+    orientation: 'landscape',
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.6, header: 0.3, footer: 0.3 }
+  };
+  ws.headerFooter.oddFooter = '&LUpton-by-Chester High School - Invigilator Time Sheets&CPage &P of &N&R&D';
+
+  // ---- Page 1: title, filters and a summary of every invigilator's hours ----
+  ws.mergeCells('A1:J1');
+  const title = ws.getCell('A1');
+  title.value = 'UPTON-BY-CHESTER HIGH SCHOOL — ALL INVIGILATOR TIME SHEETS';
+  title.font = { name: 'Arial', size: 13, bold: true, color: { argb: 'FFFFFFFF' } };
+  title.fill = XL_NAVY;
+  title.alignment = { vertical: 'middle', horizontal: 'left' };
+  ws.getRow(1).height = 28;
+
+  ws.mergeCells('A2:J2');
+  const info = ws.getCell('A2');
+  info.value =
+    `Exam period: ${period || 'All'}   |   Month: ${month ? monthLabel(month) : 'All'}   |   Hours: ${approvedOnly ? 'Approved only' : 'All claimed (including pending)'}   |   Printed: ${new Date().toLocaleDateString('en-GB')}`;
+  info.font = XL_BODY_FONT;
+  info.alignment = { vertical: 'middle', horizontal: 'left' };
+  ws.getRow(2).height = 20;
+
+  let row = 4;
+  ws.mergeCells(`A${row}:C${row}`);
+  ws.getCell(`A${row}`).value = 'INVIGILATOR';
+  ws.getCell(`D${row}`).value = 'TOTAL (HH:MM:SS)';
+  ws.getCell(`E${row}`).value = 'DECIMAL HOURS';
+  for (let col = 1; col <= 5; col++) {
+    const cell = ws.getRow(row).getCell(col);
+    cell.font = XL_BOLD_FONT;
+    cell.fill = XL_GREY;
+    cell.border = XL_BORDER;
+    cell.alignment = { vertical: 'middle', horizontal: col === 1 ? 'left' : 'center', wrapText: true };
+  }
+  ws.getRow(row).height = 22;
+  row++;
+
+  sortedPeople.forEach(p => {
+    ws.mergeCells(`A${row}:C${row}`);
+    ws.getCell(`A${row}`).value = p.name;
+    ws.getCell(`D${row}`).value = `${formatMins(p.mins)}:00`;
+    const dec = ws.getCell(`E${row}`);
+    dec.value = Number(minsToDecimal(p.mins));
+    dec.numFmt = '0.00';
+    for (let col = 1; col <= 5; col++) {
+      const cell = ws.getRow(row).getCell(col);
+      cell.font = XL_BODY_FONT;
+      cell.border = XL_BORDER;
+      cell.alignment = { vertical: 'middle', horizontal: col === 1 ? 'left' : 'center' };
+    }
+    ws.getRow(row).height = 19;
+    row++;
+  });
+
+  ws.mergeCells(`A${row}:C${row}`);
+  ws.getCell(`A${row}`).value = 'GRAND TOTAL';
+  ws.getCell(`D${row}`).value = `${formatMins(grandMins)}:00`;
+  const grandDec = ws.getCell(`E${row}`);
+  grandDec.value = Number(minsToDecimal(grandMins));
+  grandDec.numFmt = '0.00';
+  for (let col = 1; col <= 5; col++) {
+    const cell = ws.getRow(row).getCell(col);
+    cell.font = XL_BOLD_FONT;
+    cell.fill = XL_SAGE;
+    cell.border = XL_BORDER;
+    cell.alignment = { vertical: 'middle', horizontal: col === 1 ? 'left' : 'center' };
+  }
+  ws.getRow(row).height = 21;
+  ws.getRow(row).addPageBreak();
+  row += 2;
+
+  // ---- Then each invigilator's time sheet, starting on a new printed page ----
+  sortedPeople.forEach((p, idx) => {
+    ws.mergeCells(`A${row}:J${row}`);
+    const banner = ws.getCell(`A${row}`);
+    banner.value = `INVIGILATOR: ${p.name.toUpperCase()}`;
+    banner.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
+    banner.fill = XL_NAVY;
+    banner.alignment = { vertical: 'middle', horizontal: 'left' };
+    ws.getRow(row).height = 24;
+    row += 2;
+
+    [...p.periods.keys()].sort().forEach(examPeriod => {
+      ws.mergeCells(`A${row}:J${row}`);
+      const sub = ws.getCell(`A${row}`);
+      sub.value = `EXAM PERIOD: ${examPeriod.toUpperCase()}`;
+      sub.font = XL_BOLD_FONT;
+      sub.fill = XL_GREY;
+      sub.border = XL_BORDER;
+      sub.alignment = { vertical: 'middle', horizontal: 'left' };
+      ws.getRow(row).height = 20;
+      row++;
+
+      const weeks = [...p.periods.get(examPeriod).entries()]
+        .sort((a, b) => (typeof a[0] === 'number' && typeof b[0] === 'number') ? a[0] - b[0] : String(a[0]).localeCompare(String(b[0])));
+
+      weeks.forEach(entry => {
+        const block = xlWriteWeekBlock(ws, row, entry[1].label, entry[1].claims);
+        row = block.nextRow;
+      });
+    });
+
+    // Invigilator totals, in the same layout as the individual time sheet
+    const totalRow = ws.getRow(row);
+    totalRow.height = 20;
+    totalRow.getCell(1).value = 'I certify that I have worked the hours claimed above:';
+    totalRow.getCell(1).font = XL_BOLD_FONT;
+    totalRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'left' };
+    totalRow.getCell(8).value = 'TOTAL HOURS CLAIMED';
+    totalRow.getCell(8).font = XL_BOLD_FONT;
+    totalRow.getCell(8).border = XL_BORDER;
+    totalRow.getCell(8).alignment = { vertical: 'middle', horizontal: 'left' };
+    ws.mergeCells(`I${row}:J${row}`);
+    totalRow.getCell(9).value = `${formatMins(p.mins)}:00`;
+    totalRow.getCell(9).font = XL_BOLD_FONT;
+    totalRow.getCell(9).alignment = { horizontal: 'center', vertical: 'middle' };
+    totalRow.getCell(9).border = XL_BORDER;
+    totalRow.getCell(10).border = XL_BORDER;
+    row++;
+
+    const decRow = ws.getRow(row);
+    decRow.height = 20;
+    decRow.getCell(8).value = 'TOTAL HOURS (DECIMAL)';
+    decRow.getCell(8).font = XL_BOLD_FONT;
+    decRow.getCell(8).border = XL_BORDER;
+    decRow.getCell(8).alignment = { vertical: 'middle', horizontal: 'left' };
+    ws.mergeCells(`I${row}:J${row}`);
+    decRow.getCell(9).value = Number(minsToDecimal(p.mins));
+    decRow.getCell(9).numFmt = '0.00';
+    decRow.getCell(9).font = XL_BOLD_FONT;
+    decRow.getCell(9).alignment = { horizontal: 'center', vertical: 'middle' };
+    decRow.getCell(9).border = XL_BORDER;
+    decRow.getCell(10).border = XL_BORDER;
+
+    if (idx < sortedPeople.length - 1) ws.getRow(row).addPageBreak();
+    row += 3;
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  });
+  const safe = s => String(s).replace(/[^\w\-]+/g, '_');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `All_Invigilator_Timesheets${period ? '_' + safe(period) : ''}${month ? '_' + month : ''}.xlsx`;
   a.click();
   URL.revokeObjectURL(a.href);
 };

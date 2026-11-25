@@ -190,6 +190,24 @@
 
                 <!-- TAB 2: INDIVIDUAL TIME SHEET VIEW -->
                 <div id="personView" style="display: none;">
+                    <!-- Export EVERY invigilator onto one printable Excel sheet (for Finance) -->
+                    <div class="person-search-bar">
+                        <label style="font-weight: 700; color: var(--navy);">Export all invigilators Timesheet:</label>
+                        <select id="allExportPeriod" onchange="refreshAllExportMonths()">
+                            <option value="">All Exam Periods</option>
+                        </select>
+                        <select id="allExportMonth">
+                            <option value="">All Months</option>
+                        </select>
+                        <select id="allExportStatus">
+                            <option value="Approved">Approved hours only</option>
+                            <option value="">All claimed hours (incl. pending)</option>
+                        </select>
+                        <button type="button" class="export-btn" onclick="exportAllTimesheets()">
+                            Export All to Excel
+                        </button>
+                    </div>
+
                     <div class="person-search-bar">
                         <label for="personSearchInput" style="font-weight: 700; color: var(--navy);">Invigilator:</label>
                         <input
