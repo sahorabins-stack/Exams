@@ -20,6 +20,18 @@ let activeAuthToken = ''; // Holds either Google ID token or shared EXAMS_PASSCO
 let activeManagerName = 'Head of Exams';
 let allClaimsCache = [];
 let editingRowNumber = null;
+let refreshTimer;
+
+function hamburgerMenu() {
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const navLinks = document.getElementById('navLinks');
+
+    if (!hamburgerBtn || !navLinks) return;
+
+    const isOpen = navLinks.classList.toggle('open');
+    hamburgerBtn.classList.toggle('open');
+    hamburgerBtn.setAttribute('aria-expanded', isOpen);
+}
 
 function setLoginStatus(msg, isError) {
   const el = document.getElementById('loginErr');
@@ -172,6 +184,14 @@ window.switchView = function(view) {
 };
 
 window.refreshPortalData = async function() {
+  const btn =document.getElementById('refreshBtn');
+  const originalText = btn?.dataset.originalText || btn?.textContent;
+  if (btn) {
+    btn.dataset.originalText = originalText;
+    btn.disabled = true;
+    btn.textContent = 'Refreshing...';
+  }
+
   try {
     allClaimsCache = await callGas('getAllClaims', [activeAuthToken]);
     populateDatalists();
@@ -179,8 +199,23 @@ window.refreshPortalData = async function() {
     if (document.getElementById('personSearchInput')?.value.trim()) {
       onPersonNameChange();
     }
+
+    if (btn) {
+      btn.textContent = 'Refreshed!';
+    }
   } catch (err) {
     handleSessionError(err);
+    if (btn) {
+      btn.textContent = 'Refresh failed';
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        btn.textContent = originalText;
+      }, 2000); // Resets after 2 seconds
+    }
   }
 };
 
@@ -243,16 +278,20 @@ window.renderTable = function() {
     return;
   }
 
-  tbody.innerHTML = filtered.map(function(c) {
+tbody.innerHTML = filtered.map(function(c) {
     const isApproved = String(c.status || '').toLowerCase().startsWith('approved');
     const sessions = [];
     if (c.amWorked === 'Yes') sessions.push(`AM ${c.amStart}–${c.amFinish}${c.amExtra ? ' (+' + c.amExtra + 'm)' : ''}`);
     if (c.pmWorked === 'Yes') sessions.push(`PM ${c.pmStart}–${c.pmFinish}${c.pmExtra ? ' (+' + c.pmExtra + 'm)' : ''}`);
     const rowMins = parseHoursToMins(c.dailyTotal);
 
+    // Strip everything from the '@' symbol onwards (e.g., "j.smith@school.ac.uk" -> "j.smith")
+    const rawName = String(c.invigilatorName || '');
+    const displayName = rawName.includes('@') ? rawName.split('@')[0] : rawName;
+
     return `
       <tr>
-        <td><strong>${escapeHtml(c.invigilatorName)}</strong></td>
+        <td><strong>${escapeHtml(displayName)}</strong></td>
         <td>${escapeHtml(c.examPeriod)}<br><small style="color:#6b7280;">W/C ${escapeHtml(c.weekCommencing)}</small></td>
         <td><strong>${escapeHtml(c.day)}</strong><br><small>${escapeHtml(sessions.join(' | ') || 'Extra mins only')}</small></td>
         <td><strong>${escapeHtml(c.dailyTotal)}</strong> <small style="color:#6b7280;">(${minsToDecimal(rowMins)})</small></td>
@@ -265,8 +304,7 @@ window.renderTable = function() {
       </tr>
     `;
   }).join('');
-};
-
+}
 window.approveSingleRow = async function(rowNumber) {
   try {
     allClaimsCache = await callGas('approveMultipleRows', [activeAuthToken, [rowNumber], activeManagerName]);

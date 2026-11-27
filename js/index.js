@@ -1,3 +1,80 @@
+// ---------- Role tab slider (kept at the very top so nothing further down can stop it) ----------
+(function () {
+  function setup() {
+    var a = document.getElementById('tabSupportingBtn');
+    var b = document.getElementById('tabLeadBtn');
+    if (!a || !b) {
+      console.warn('Role tab slider: could not find #tabSupportingBtn / #tabLeadBtn');
+      return;
+    }
+    var box = a.closest('.role-tabs') || a.parentNode;
+    if (getComputedStyle(box).position === 'static') box.style.position = 'relative';
+
+    var slider = document.createElement('span');
+    slider.className = 'role-tab-slider';
+    box.insertBefore(slider, box.firstChild);
+
+    var reduce = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+    var placed = false;
+    var current = null;
+    var anim = null;
+
+    // where the slider is on screen right now (correct even mid-animation)
+    function visualRect() {
+      var r = slider.getBoundingClientRect();
+      var br = box.getBoundingClientRect();
+      return { x: r.left - br.left - box.clientLeft, y: r.top - br.top - box.clientTop, w: r.width, h: r.height };
+    }
+    function frame(r) {
+      return { width: r.w + 'px', height: r.h + 'px', transform: 'translate(' + r.x + 'px,' + r.y + 'px)' };
+    }
+
+    function place(animate) {
+      var on = box.querySelector('.role-tab.active');
+      if (!on || !on.offsetWidth) return;                       // hidden or not laid out yet
+
+      var from = placed ? visualRect() : null;
+      var to = { x: on.offsetLeft, y: on.offsetTop, w: on.offsetWidth, h: on.offsetHeight };
+
+      if (anim) { anim.cancel(); anim = null; }
+      slider.style.width = to.w + 'px';
+      slider.style.height = to.h + 'px';
+      slider.style.transform = 'translate(' + to.x + 'px,' + to.y + 'px)';
+
+      if (!placed) {
+        placed = true;
+        slider.style.opacity = '1';
+        box.classList.add('placed');
+      } else if (animate && !reduce.matches && slider.animate &&
+                 (Math.abs(from.x - to.x) > 1 || Math.abs(from.y - to.y) > 1 || Math.abs(from.w - to.w) > 1)) {
+        anim = slider.animate([frame(from), frame(to)], {
+          duration: 450,
+          easing: 'cubic-bezier(0.16, 1, 0.3, 1)'
+        });
+      }
+      current = to;
+    }
+
+    // one observer for both buttons: fires whenever selectRole() changes their class names
+    var mo = new MutationObserver(function () { place(true); });
+    mo.observe(a, { attributes: true, attributeFilter: ['class'] });
+    mo.observe(b, { attributes: true, attributeFilter: ['class'] });
+
+    // clicking also triggers it directly, in case the class change happens a moment later
+    [a, b].forEach(function (btn) {
+      btn.addEventListener('click', function () { setTimeout(function () { place(true); }, 0); });
+    });
+
+    window.addEventListener('resize', function () { place(false); });
+    window.addEventListener('load', function () { place(false); });
+    if (window.ResizeObserver) new ResizeObserver(function () { place(false); }).observe(box);
+    place(false);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup);
+  else setup();
+})();
+
 // ---------- Session Guard (Redirects to login.html if not signed in) ----------
     const rawSession = sessionStorage.getItem('ubc_invig_session');
     if (!rawSession) {
@@ -41,6 +118,11 @@
 
     function cleanPeriodName(rawPeriod) {
       return String(rawPeriod || '').replace(/^\[(Lead|Supporting)\]\s*/i, '').trim();
+    }
+
+    // Keeps the styled dropdown buttons in step with the real <select> values
+    function refreshDropdowns() {
+      if (typeof window.syncFancySelects === 'function') window.syncFancySelects();
     }
 
     function showSubmitted(msg) {
@@ -271,6 +353,9 @@
       saveLocalDraft();
     }
 
+    
+
+    
     function renderWeeksSummary() {
       const weeks = sortedWeeksForActivePeriod();
       const box = document.getElementById('weeksBox');
@@ -346,6 +431,7 @@
         renderedMeta = null;
         tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">No sessions listed for this week.</td></tr>';
         recalculateAll();
+        refreshDropdowns();
         return;
       }
 
@@ -377,6 +463,7 @@
       renderedMeta = { key: makeKey(currentRole, period, week), role: currentRole, period: period, week: week };
       restoreRowsFromStore();
       recalculateAll();
+      refreshDropdowns();
     }
 
     function onFormInput() {
@@ -742,3 +829,177 @@
         })
         .submitTimeSheet(payload);
     });
+
+
+    /* =========================================================
+       FANCY DROPDOWNS
+       Upgrades the Exam Period and Week Commencing selects (plus any
+       <select class="fancy">) into styled dropdowns. The real <select>
+       stays in the page, so every line of code above keeps working.
+       ========================================================= */
+    (function () {
+      var CHEV  = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+      var CHECK = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+      var syncers = [];
+
+      function enhance(sel) {
+        if (!sel || sel.dataset.fddDone) return;
+        sel.dataset.fddDone = '1';
+
+        // wrap the select
+        var wrap = document.createElement('div');
+        wrap.className = 'fdd';
+        sel.parentNode.insertBefore(wrap, sel);
+        wrap.appendChild(sel);
+        sel.classList.add('fdd-native');
+        sel.tabIndex = -1;
+
+        // button
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'fdd-btn';
+        btn.setAttribute('aria-haspopup', 'listbox');
+        btn.setAttribute('aria-expanded', 'false');
+        btn.innerHTML = '<span class="fdd-label"></span><span class="fdd-chev">' + CHEV + '</span>';
+        var labelEl = btn.querySelector('.fdd-label');
+
+        // menu
+        var menu = document.createElement('div');
+        menu.className = 'fdd-menu';
+        var search = document.createElement('input');
+        search.type = 'text';
+        search.className = 'fdd-search';
+        search.placeholder = 'Search...';
+        search.autocomplete = 'off';
+        var list = document.createElement('ul');
+        list.className = 'fdd-list';
+        list.setAttribute('role', 'listbox');
+        var empty = document.createElement('div');
+        empty.className = 'fdd-empty';
+        empty.textContent = 'No matches';
+        empty.hidden = true;
+        menu.append(search, list, empty);
+        wrap.append(btn, menu);
+
+        var active = -1;
+
+        function visibleOpts() {
+          return Array.prototype.slice.call(list.querySelectorAll('li:not([hidden]) .fdd-opt:not([disabled])'));
+        }
+        function setActive(i) {
+          var v = visibleOpts();
+          if (!v.length) { active = -1; return; }
+          active = (i + v.length) % v.length;
+          v.forEach(function (o, k) { o.classList.toggle('active', k === active); });
+          v[active].scrollIntoView({ block: 'nearest' });
+        }
+        function filter() {
+          var q = search.value.trim().toLowerCase();
+          var shown = 0;
+          list.querySelectorAll('li').forEach(function (li) {
+            var match = !q || li.textContent.toLowerCase().indexOf(q) !== -1;
+            li.hidden = !match;
+            if (match) shown++;
+          });
+          empty.hidden = shown > 0;
+          setActive(0);
+        }
+        function close() {
+          wrap.classList.remove('open');
+          btn.setAttribute('aria-expanded', 'false');
+        }
+        function open() {
+          if (sel.disabled) return;
+          wrap.classList.add('open');
+          btn.setAttribute('aria-expanded', 'true');
+          if (!search.hidden) {
+            search.value = '';
+            filter();
+            setTimeout(function () { search.focus(); }, 40);
+          }
+          var v = visibleOpts();
+          var cur = v.findIndex(function (o) { return o.classList.contains('selected'); });
+          setActive(cur >= 0 ? cur : 0);
+        }
+        function pick(value) {
+          sel.value = value;
+          sel.dispatchEvent(new Event('change', { bubbles: true }));  // fires onchange="renderScheduleRows()" etc.
+          close();
+          btn.focus();
+        }
+
+        // show the select's current value on the button and tick it in the list
+        function sync() {
+          var cur = sel.options[sel.selectedIndex];
+          var has = cur && cur.value !== '';
+          labelEl.textContent = has ? cur.textContent : (sel.options[0] ? sel.options[0].textContent : 'Select...');
+          labelEl.classList.toggle('placeholder', !has);
+          list.querySelectorAll('.fdd-opt').forEach(function (o) {
+            var on = o.dataset.value === sel.value && sel.value !== '';
+            o.classList.toggle('selected', on);
+            o.setAttribute('aria-selected', on);
+          });
+          wrap.classList.toggle('disabled', sel.disabled);
+          btn.disabled = sel.disabled;
+        }
+
+        // rebuild the list from the select's options (re-runs whenever the code above refills the select)
+        function rebuild() {
+          list.innerHTML = '';
+          var n = 0;
+          Array.prototype.forEach.call(sel.options, function (opt) {
+            if (!opt.value) return;                       // skip the placeholder option
+            var li = document.createElement('li');
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'fdd-opt';
+            b.setAttribute('role', 'option');
+            b.dataset.value = opt.value;
+            b.disabled = opt.disabled;
+            b.style.setProperty('--i', Math.min(n, 12));
+            b.innerHTML = '<span></span>' + CHECK;
+            b.firstChild.textContent = opt.textContent;
+            b.querySelector('svg').classList.add('fdd-check');
+            b.addEventListener('click', function () { pick(opt.value); });
+            li.appendChild(b);
+            list.appendChild(li);
+            n++;
+          });
+          var wantSearch = sel.dataset.search ? sel.dataset.search === 'true' : n > 7;
+          search.hidden = !wantSearch;
+          sync();
+        }
+
+        // events
+        btn.addEventListener('click', function () { wrap.classList.contains('open') ? close() : open(); });
+        search.addEventListener('input', filter);
+        wrap.addEventListener('keydown', function (e) {
+          var isOpen = wrap.classList.contains('open');
+          if (e.key === 'Escape' && isOpen) { close(); btn.focus(); return; }
+          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (!isOpen) { open(); return; }
+            setActive(active + (e.key === 'ArrowDown' ? 1 : -1));
+          } else if (e.key === 'Enter' && isOpen) {
+            e.preventDefault();
+            var v = visibleOpts();
+            if (v[active]) pick(v[active].dataset.value);
+          }
+        });
+        document.addEventListener('click', function (e) { if (!wrap.contains(e.target)) close(); });
+        sel.addEventListener('change', sync);
+        new MutationObserver(rebuild).observe(sel, { childList: true, attributes: true, attributeFilter: ['disabled'] });
+
+        rebuild();
+        syncers.push(sync);
+      }
+
+      function init() {
+        document.querySelectorAll('select.fancy, #examPeriod, #weekCommencing').forEach(enhance);
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+      else init();
+
+      window.enhanceSelect = enhance;                                   // enhance a select added later
+      window.syncFancySelects = function () { syncers.forEach(function (s) { s(); }); };
+    })();

@@ -9,13 +9,25 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
-  <div class="portal-nav-strip">
-    <img src="./img/UBC Logo.png" alt="School Crest" class="school-logo" onerror="this.style.display='none'" />
-    <div class="portal-nav-links">
-      <a href="./login.html" class="portal-nav-btn active">TimeSheet</a>
-      <a href="./approve.html" class="portal-nav-btn">Head of Exams Authorisation</a>
+<!-- PORTAL NAVIGATION BAR -->
+<div class="portal-nav-strip">
+    <img
+        src="./img/UBC Logo.png"
+        alt="School Crest"
+        class="school-logo"
+        onerror="this.style.display='none'"
+    />
+    <button type="button" class="hamburger-btn" id="hamburgerBtn" onclick="hamburgerMenu()" aria-label="Toggle navigation" aria-expanded="false">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+    </button>
+
+    <div class="portal-nav-links" id="navLinks">
+        <a href="./index.html" class="portal-nav-btn active">TimeSheet</a>
+        <a href="./approve.html" class="portal-nav-btn">Head of Exams Authorisation</a>
     </div>
-  </div>
+</div>
 
   <div class="login-card">
     <div class="login-banner">
@@ -66,6 +78,25 @@
 
   <script src="./api.js"></script>
   <script>
+
+    function hamburgerMenu() {
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const navLinks = document.getElementById('navLinks');
+
+    if (!hamburgerBtn || !navLinks) return;
+
+    const isOpen = navLinks.classList.toggle('open');
+    hamburgerBtn.classList.toggle('open');
+    hamburgerBtn.setAttribute('aria-expanded', isOpen);
+}
+
+function setLoginStatus(msg, isError) {
+  const el = document.getElementById('loginErr');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.display = msg ? 'block' : 'none';
+  el.style.color = isError ? '#b91c1c' : '#0d2d6c';
+}
     if (sessionStorage.getItem("ubc_invig_session")) {
       window.location.href = "./index.html";
     }
